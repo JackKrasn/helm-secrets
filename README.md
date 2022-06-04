@@ -61,9 +61,19 @@ An example how to use helm-secrets with terraform could be found in [examples/te
 
 ## Secret drivers
 
-helm-secrets supports multiplie secret drivers like [sops](https://github.com/mozilla/sops), [Hashicorp Vault](https://www.vaultproject.io/), [vals](https://github.com/variantdev/vals/) and more.
+helm-secrets supports multiplie secret drivers like [sops](https://github.com/mozilla/sops), [Hashicorp Vault](https://www.vaultproject.io/), [vals](https://github.com/variantdev/vals/), [avault](https://github.com/JackKrasn/avault) and more.
 
 See [Secret-Driver](https://github.com/jkroepke/helm-secrets/wiki/Secret-Driver) how to use them.
+
+Added additional secret driver avault. 
+
+###Ansible Vault
+
+The ansible vault secret driver can be enabled by define HELM_SECRETS_DRIVER=avault.
+
+The Avault utility must be installed locally. 
+
+The secret phrase for decryption must be specified by define AVAULT_PASSWORD=xxxx
 
 ## Main features
 
