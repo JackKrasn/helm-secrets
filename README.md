@@ -67,7 +67,7 @@ See [Secret-Driver](https://github.com/jkroepke/helm-secrets/wiki/Secret-Driver)
 
 Added additional secret driver avault. 
 
-###Ansible Vault
+### Ansible Vault
 
 The ansible vault secret driver can be enabled by define HELM_SECRETS_DRIVER=avault.
 
