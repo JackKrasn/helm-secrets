@@ -1,6 +1,6 @@
 # Secret Driver
 
-It's possible to use another secret driver then sops, e.g. Hasicorp Vault.
+It's possible to use another secret driver then sops, avault or Hasicorp Vault .
 
 Example for in-tree drivers via option
 ```bash
@@ -68,6 +68,15 @@ Before start to use sops with gpg, consider start to use [age](https://github.co
 
 The sops secret store is enabled by default.
 
+## avault
+
+If you use avault with helm-secrets, the avault CLI tool is needed.
+avault 0.1.0 is required at minumun
+
+Download: # TODO: after release avault
+
+Then specify environment variables `HELM_SECRETS_DRIVER=avault` and `AVAULT_PASSWORD=<password phrase>`
+
 ## vals
 
 [vals](https://github.com/variantdev/vals) is a tool for managing configuration values and secrets form various sources.
@@ -83,6 +92,7 @@ It supports various backends including:
 * [SOPS-encrypted files](https://github.com/variantdev/vals#sops)
 * [Terraform State](https://github.com/variantdev/vals#terraform-tfstate)
 * [Plain File](https://github.com/variantdev/vals#file)
+* [Ansible Vault encrypted files](https://github.com/JackKrasn/avault)
 
 All clients are integrated into vals, no additional tools required.
 
