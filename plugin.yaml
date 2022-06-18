@@ -1,5 +1,5 @@
 name: "secrets"
-version: "1.0.0-dev" # fork from 3.14.0-dev
+version: "3.14.0-dev" # fork from 3.14.0-dev
 usage: "Secrets encryption in Helm for Git storing"
 description: |-
   This plugin provides secrets values encryption for Helm charts secure storing
