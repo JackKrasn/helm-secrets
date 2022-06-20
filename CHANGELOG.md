@@ -4,7 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.15.0] - 2022-19-06
+
+### Added
+- avault driver
+
+## [3.14.0] - 2022-06-06
 
 ### Added
 - Added error handling in case `curl` or `wget` is not installed.
@@ -13,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changes
 - Check detection of sops encrypted files
+- Prefer gpg4win, if available. Use `SOPS_GPG_EXEC=gpg` as environment variable to restore the old behavior.
 
 ### Fixed
 - Error, if HELM_SECRETS_WINDOWS_SHELL contains spaces

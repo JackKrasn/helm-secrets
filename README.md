@@ -71,7 +71,7 @@ Added additional secret driver avault.
 
 The ansible vault secret driver can be enabled by define HELM_SECRETS_DRIVER=avault.
 
-The Avault utility must be installed locally. 
+The avault utility must be installed locally. 
 
 The secret phrase for decryption must be specified by define AVAULT_PASSWORD=xxxx
 
