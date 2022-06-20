@@ -27,11 +27,10 @@ clean:
 	@echo "deleting ${DIST_DIR}"
 	@rm -rf '$(DIST_DIR)'
 
-release:
-	clean
-	build
-	github-release release -u ${GITHUB_USER} -r ${GITHUB_REPO} -t ${VERSION} -c ${COMMIT} -n ${VERSION}
+release: clean build
+	github-release release -u ${GITHUB_USER} -r ${GITHUB_REPO} -t ${VERSION} -c ${GIT_COMMIT} -n ${VERSION}
 	github-release upload -u ${GITHUB_USER} -r ${GITHUB_REPO} -t ${VERSION} -n helm-secrets-${VERSION}.tar.gz -f release/helm-secrets-${VERSION}.tar.gz
+	autotag
 
 
 
