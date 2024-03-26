@@ -2,10 +2,12 @@
 /.idea/
 /tests/.tmp/
 coverage
+.local
 
 *.dec
 *.test
 
 .netrc
 
-dist/
+test*.sh
+/vendor

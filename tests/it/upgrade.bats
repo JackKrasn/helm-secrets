@@ -19,6 +19,7 @@ load '../bats/extensions/bats-file/load'
 }
 
 @test "upgrade: helm upgrade w/ chart" {
+    SEED="${RANDOM}"
     RELEASE="upgrade-$(date +%s)-${SEED}"
     create_chart "${TEST_TEMP_DIR}"
 
@@ -28,12 +29,13 @@ load '../bats/extensions/bats-file/load'
     assert_output --partial 'STATUS: deployed'
     refute_output --partial "[helm-secrets] Removed:"
 
-    run kubectl get svc -o yaml -l "app.kubernetes.io/name=chart,app.kubernetes.io/instance=${RELEASE}"
+    run kubectl get svc -o yaml -l "app.kubernetes.io/name=${HELM_SECRETS_BACKEND},app.kubernetes.io/instance=${RELEASE}"
     assert_success
 }
 
 @test "upgrade: helm upgrade w/ chart + secrets.yaml" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="upgrade-$(date +%s)-${SEED}"
     create_chart "${TEST_TEMP_DIR}"
 
@@ -42,15 +44,16 @@ load '../bats/extensions/bats-file/load'
     assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
     assert_output --partial "STATUS: deployed"
     assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 
-    run kubectl get svc -o yaml -l "app.kubernetes.io/name=chart,app.kubernetes.io/instance=${RELEASE}"
+    run kubectl get svc -o yaml -l "app.kubernetes.io/name=${HELM_SECRETS_BACKEND},app.kubernetes.io/instance=${RELEASE}"
     assert_success
     assert_output --partial "port: 81"
 }
 
 @test "upgrade: helm upgrade w/ chart + secrets.yaml + --values" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="upgrade-$(date +%s)-${SEED}"
     create_chart "${TEST_TEMP_DIR}"
 
@@ -59,15 +62,16 @@ load '../bats/extensions/bats-file/load'
     assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
     assert_output --partial "STATUS: deployed"
     assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 
-    run kubectl get svc -o yaml -l "app.kubernetes.io/name=chart,app.kubernetes.io/instance=${RELEASE}"
+    run kubectl get svc -o yaml -l "app.kubernetes.io/name=${HELM_SECRETS_BACKEND},app.kubernetes.io/instance=${RELEASE}"
     assert_success
     assert_output --partial "port: 81"
 }
 
 @test "upgrade: helm upgrade w/ chart + secrets.yaml + --values=" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="upgrade-$(date +%s)-${SEED}"
     create_chart "${TEST_TEMP_DIR}"
 
@@ -76,15 +80,16 @@ load '../bats/extensions/bats-file/load'
     assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
     assert_output --partial "STATUS: deployed"
     assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 
-    run kubectl get svc -o yaml -l "app.kubernetes.io/name=chart,app.kubernetes.io/instance=${RELEASE}"
+    run kubectl get svc -o yaml -l "app.kubernetes.io/name=${HELM_SECRETS_BACKEND},app.kubernetes.io/instance=${RELEASE}"
     assert_success
     assert_output --partial "port: 81"
 }
 
 @test "upgrade: helm upgrade w/ chart + some-secrets.yaml" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/some-secrets.yaml"
+    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/some-secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="upgrade-$(date +%s)-${SEED}"
     create_chart "${TEST_TEMP_DIR}"
 
@@ -93,15 +98,16 @@ load '../bats/extensions/bats-file/load'
     assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
     assert_output --partial "STATUS: deployed"
     assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 
-    run kubectl get svc -o yaml -l "app.kubernetes.io/name=chart,app.kubernetes.io/instance=${RELEASE}"
+    run kubectl get svc -o yaml -l "app.kubernetes.io/name=${HELM_SECRETS_BACKEND},app.kubernetes.io/instance=${RELEASE}"
     assert_success
     assert_output --partial "port: 83"
 }
 
 @test "upgrade: helm upgrade w/ chart + some-secrets.yaml + --values" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/some-secrets.yaml"
+    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/some-secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="upgrade-$(date +%s)-${SEED}"
     create_chart "${TEST_TEMP_DIR}"
 
@@ -110,15 +116,16 @@ load '../bats/extensions/bats-file/load'
     assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
     assert_output --partial "STATUS: deployed"
     assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 
-    run kubectl get svc -o yaml -l "app.kubernetes.io/name=chart,app.kubernetes.io/instance=${RELEASE}"
+    run kubectl get svc -o yaml -l "app.kubernetes.io/name=${HELM_SECRETS_BACKEND},app.kubernetes.io/instance=${RELEASE}"
     assert_success
     assert_output --partial "port: 83"
 }
 
 @test "upgrade: helm upgrade w/ chart + some-secrets.yaml + --values=" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/some-secrets.yaml"
+    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/some-secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="upgrade-$(date +%s)-${SEED}"
     create_chart "${TEST_TEMP_DIR}"
 
@@ -127,15 +134,16 @@ load '../bats/extensions/bats-file/load'
     assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
     assert_output --partial "STATUS: deployed"
     assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 
-    run kubectl get svc -o yaml -l "app.kubernetes.io/name=chart,app.kubernetes.io/instance=${RELEASE}"
+    run kubectl get svc -o yaml -l "app.kubernetes.io/name=${HELM_SECRETS_BACKEND},app.kubernetes.io/instance=${RELEASE}"
     assert_success
     assert_output --partial "port: 83"
 }
 
 @test "upgrade: helm upgrade w/ chart + secrets.yaml + helm flag" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="upgrade-$(date +%s)-${SEED}"
     create_chart "${TEST_TEMP_DIR}"
 
@@ -144,36 +152,38 @@ load '../bats/extensions/bats-file/load'
     assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
     assert_output --partial "STATUS: deployed"
     assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 
-    run kubectl get svc -o yaml -l "app.kubernetes.io/name=chart,app.kubernetes.io/instance=${RELEASE}"
+    run kubectl get svc -o yaml -l "app.kubernetes.io/name=${HELM_SECRETS_BACKEND},app.kubernetes.io/instance=${RELEASE}"
     assert_success
     assert_output --partial "port: 81"
     assert_output --partial "type: NodePort"
 }
 
 @test "upgrade: helm upgrade w/ chart + pre decrypted secrets.yaml" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="upgrade-$(date +%s)-${SEED}"
-    printf 'service:\n  port: 82' > "${FILE}.dec"
+    printf 'service:\n  port: 82' >"${FILE}.dec"
     create_chart "${TEST_TEMP_DIR}"
 
     run "${HELM_BIN}" secrets upgrade -i "${RELEASE}" "${TEST_TEMP_DIR}/chart" --no-hooks -f "${FILE}" 2>&1
     assert_success
     assert_output --partial "[helm-secrets] Decrypt skipped: ${FILE}"
     assert_output --partial "STATUS: deployed"
-    assert [ -f "${FILE}.dec" ]
+    assert_file_exists "${FILE}.dec"
 
     run rm "${FILE}.dec"
     assert_success
 
-    run kubectl get svc -o yaml -l "app.kubernetes.io/name=chart,app.kubernetes.io/instance=${RELEASE}"
+    run kubectl get svc -o yaml -l "app.kubernetes.io/name=${HELM_SECRETS_BACKEND},app.kubernetes.io/instance=${RELEASE}"
     assert_success
     assert_output --partial "port: 82"
 }
 
 @test "upgrade: helm upgrade w/ chart + secrets.yaml + q flag" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="upgrade-$(date +%s)-${SEED}"
     create_chart "${TEST_TEMP_DIR}"
 
@@ -182,15 +192,16 @@ load '../bats/extensions/bats-file/load'
     refute_output --partial "[helm-secrets] Decrypt: ${FILE}"
     assert_output --partial "STATUS: deployed"
     refute_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 
-    run kubectl get svc -o yaml -l "app.kubernetes.io/name=chart,app.kubernetes.io/instance=${RELEASE}"
+    run kubectl get svc -o yaml -l "app.kubernetes.io/name=${HELM_SECRETS_BACKEND},app.kubernetes.io/instance=${RELEASE}"
     assert_success
     assert_output --partial "port: 81"
 }
 
 @test "upgrade: helm upgrade w/ chart + secrets.yaml + quiet flag" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="upgrade-$(date +%s)-${SEED}"
     create_chart "${TEST_TEMP_DIR}"
 
@@ -199,15 +210,16 @@ load '../bats/extensions/bats-file/load'
     refute_output --partial "[helm-secrets] Decrypt: ${FILE}"
     assert_output --partial "STATUS: deployed"
     refute_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 
-    run kubectl get svc -o yaml -l "app.kubernetes.io/name=chart,app.kubernetes.io/instance=${RELEASE}"
+    run kubectl get svc -o yaml -l "app.kubernetes.io/name=${HELM_SECRETS_BACKEND},app.kubernetes.io/instance=${RELEASE}"
     assert_success
     assert_output --partial "port: 81"
 }
 
 @test "upgrade: helm upgrade w/ chart + secrets.yaml + special path" {
-    FILE="${SPECIAL_CHAR_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    FILE="${SPECIAL_CHAR_DIR}/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="upgrade-$(date +%s)-${SEED}"
     create_chart "${SPECIAL_CHAR_DIR}"
 
@@ -216,15 +228,16 @@ load '../bats/extensions/bats-file/load'
     assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
     assert_output --partial "STATUS: deployed"
     assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 
-    run kubectl get svc -o yaml -l "app.kubernetes.io/name=chart,app.kubernetes.io/instance=${RELEASE}"
+    run kubectl get svc -o yaml -l "app.kubernetes.io/name=${HELM_SECRETS_BACKEND},app.kubernetes.io/instance=${RELEASE}"
     assert_success
     assert_output --partial "port: 81"
 }
 
 @test "upgrade: helm upgrade w/ chart + invalid yaml" {
     FILE="${TEST_TEMP_DIR}/secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="upgrade-$(date +%s)-${SEED}"
 
     create_encrypted_file 'replicaCount: |\n  a:'
@@ -235,25 +248,12 @@ load '../bats/extensions/bats-file/load'
     assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
     assert_output --partial "YAML parse error on"
     assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert [ ! -f "${FILE}.dec" ]
-}
-
-@test "upgrade: helm upgrade w/ chart + secrets.yaml + sops://" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
-    RELEASE="upgrade-$(date +%s)-${SEED}"
-    create_chart "${TEST_TEMP_DIR}"
-
-    run "${HELM_BIN}" upgrade -i "${RELEASE}" "${TEST_TEMP_DIR}/chart" --no-hooks -f "sops://${FILE}" 2>&1
-    assert_success
-    assert_output --partial "STATUS: deployed"
-
-    run kubectl get svc -o yaml -l "app.kubernetes.io/name=chart,app.kubernetes.io/instance=${RELEASE}"
-    assert_success
-    assert_output --partial "port: 81"
+    assert_file_not_exists "${FILE}.dec"
 }
 
 @test "upgrade: helm upgrade w/ chart + secrets.yaml + http://" {
-    FILE="https://raw.githubusercontent.com/jkroepke/helm-secrets/main/tests/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    FILE="https://raw.githubusercontent.com/jkroepke/helm-secrets/main/tests/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="upgrade-$(date +%s)-${SEED}"
     create_chart "${TEST_TEMP_DIR}"
 
@@ -262,9 +262,9 @@ load '../bats/extensions/bats-file/load'
     assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
     assert_output --partial "STATUS: deployed"
     assert_output --partial "[helm-secrets] Removed: "
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 
-    run kubectl get svc -o yaml -l "app.kubernetes.io/name=chart,app.kubernetes.io/instance=${RELEASE}"
+    run kubectl get svc -o yaml -l "app.kubernetes.io/name=${HELM_SECRETS_BACKEND},app.kubernetes.io/instance=${RELEASE}"
     assert_success
     assert_output --partial "port: 81"
 }
@@ -274,7 +274,8 @@ load '../bats/extensions/bats-file/load'
         skip
     fi
 
-    FILE="git+https://github.com/jkroepke/helm-secrets@tests/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml?ref=main"
+    FILE="git+https://github.com/jkroepke/helm-secrets@tests/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml?ref=main"
+    SEED="${RANDOM}"
     RELEASE="upgrade-$(date +%s)-${SEED}"
     create_chart "${TEST_TEMP_DIR}"
 
@@ -283,24 +284,25 @@ load '../bats/extensions/bats-file/load'
     assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
     assert_output --partial "STATUS: deployed"
     assert_output --partial "[helm-secrets] Removed: "
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 
-    run kubectl get svc -o yaml -l "app.kubernetes.io/name=chart,app.kubernetes.io/instance=${RELEASE}"
+    run kubectl get svc -o yaml -l "app.kubernetes.io/name=${HELM_SECRETS_BACKEND},app.kubernetes.io/instance=${RELEASE}"
     assert_success
     assert_output --partial "port: 81"
 }
 
 @test "upgrade: helm upgrade w/ chart + secrets.yaml + secrets://http://" {
-    FILE="secrets://https://raw.githubusercontent.com/jkroepke/helm-secrets/main/tests/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    FILE="secrets://https://raw.githubusercontent.com/jkroepke/helm-secrets/main/tests/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="upgrade-$(date +%s)-${SEED}"
     create_chart "${TEST_TEMP_DIR}"
 
     run "${HELM_BIN}" upgrade -i "${RELEASE}" "${TEST_TEMP_DIR}/chart" --no-hooks -f "${FILE}" 2>&1
     assert_success
     assert_output --partial "STATUS: deployed"
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 
-    run kubectl get svc -o yaml -l "app.kubernetes.io/name=chart,app.kubernetes.io/instance=${RELEASE}"
+    run kubectl get svc -o yaml -l "app.kubernetes.io/name=${HELM_SECRETS_BACKEND},app.kubernetes.io/instance=${RELEASE}"
     assert_success
     assert_output --partial "port: 81"
 }
@@ -310,16 +312,17 @@ load '../bats/extensions/bats-file/load'
         skip
     fi
 
-    FILE="secrets://git+https://github.com/jkroepke/helm-secrets@tests/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml?ref=main"
+    FILE="secrets://git+https://github.com/jkroepke/helm-secrets@tests/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml?ref=main"
+    SEED="${RANDOM}"
     RELEASE="upgrade-$(date +%s)-${SEED}"
     create_chart "${TEST_TEMP_DIR}"
 
     run "${HELM_BIN}" upgrade -i "${RELEASE}" "${TEST_TEMP_DIR}/chart" --no-hooks -f "${FILE}" 2>&1
     assert_success
     assert_output --partial "STATUS: deployed"
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 
-    run kubectl get svc -o yaml -l "app.kubernetes.io/name=chart,app.kubernetes.io/instance=${RELEASE}"
+    run kubectl get svc -o yaml -l "app.kubernetes.io/name=${HELM_SECRETS_BACKEND},app.kubernetes.io/instance=${RELEASE}"
     assert_success
     assert_output --partial "port: 81"
 }

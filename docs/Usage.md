@@ -3,34 +3,31 @@
 ```
 $ helm secrets help
 
-Secrets encryption in Helm Charts
+helm-secrets is a helm plugin for decrypt encrypted helm value files on the fly.
 
-This plugin provides ability to encrypt/decrypt secrets files
-to store in less secure places, before they are installed using
-Helm.
+For more information, see the README.md at https://github.com/jkroepke/helm-secrets
 
-For more information, see the README at github.com/jkroepke/helm-secrets
-
-To decrypt/encrypt/edit you need to initialize/first encrypt secrets with
-sops - https://github.com/mozilla/sops
+To decrypt/encrypt/edit locally you need to initialize/first encrypt secrets with
+sops - https://github.com/getsops/sops
 
 Available Commands:
-  enc     Encrypt secrets file
-  dec     Decrypt secrets file
-  view    Print secrets decrypted
+  encrypt Encrypt secrets file
+  decrypt Decrypt secrets file
   edit    Edit secrets file and encrypt afterwards
-  clean   Remove all decrypted files in specified directory (recursively)
   dir     Get plugin directory
   patch   Enables windows specific adjustments
   <cmd>   wrapper that decrypts encrypted yaml files before running helm <cmd>
 
 Available Options:
-  --quiet                    -q  Suppress info messages (env: $HELM_SECRETS_QUIET)
-  --driver                   -d  Secret driver to use for decryption or encryption (env: $HELM_SECRETS_DRIVER)
-  --driver-args              -a  Additional args for secret driver (env: $HELM_SECRETS_DRIVER_ARGS)
-  --help                     -h  Show help
-  --version                  -v  Display version of helm-secrets
-  --output-decrypt-file-path     Output the path of decrypted file
+  --quiet                                          -q  Suppress info messages (env: $HELM_SECRETS_QUIET)
+  --backend                                        -b  Secret backend to use for decryption or encryption (env: $HELM_SECRETS_BACKEND)
+  --backend-args                                   -a  Additional args for secret backend (env: $HELM_SECRETS_BACKEND_ARGS)
+  --ignore-missing-values [true|false]                 Ignore missing value files (env: $HELM_SECRETS_IGNORE_MISSING_VALUES)
+  --evaluate-templates [true|false]                    Evaluate secret expressions inside helm template (only supported by vals backend) (env: $HELM_SECRETS_EVALUATE_TEMPLATES)
+  --evaluate-templates-decode-secrets [true|false]     If --evaluate-templates is set, decode base64 values from secrets to evaluate them (env: $HELM_SECRETS_EVALUATE_TEMPLATES_DECODE_SECRETS)
+  --decrypt-secrets-in-tmp-dir [true|false]            Decrypt secrets in a temp directory. May solve concurrency issues. (env: $HELM_SECRETS_DECRYPT_SECRETS_IN_TMP_DIR)
+  --help                                           -h  Show help
+  --version                                        -v  Display version of helm-secrets
 ```
 
 By convention, files containing secrets are named `secrets.yaml`, or anything beginning with "secrets" and ending with ".yaml". E.g. `secrets.test.yaml`, `secrets.prod.yaml` `secretsCOOL.yaml`.
@@ -42,16 +39,14 @@ Decrypted files have the suffix ".dec" by default. This can be changed using the
 ## Basic commands:
 
 ```
-  enc           Encrypt secrets file
-  dec           Decrypt secrets file
-  view          Print decrypted secrets file
-  edit          Edit secrets file (decrypt before and encrypt after)
-  clean         Delete *.yaml.dec files in directory (recursively)
+  encrypt Encrypt secrets file
+  decrypt Decrypt secrets file
+  edit    Edit secrets file and encrypt afterwards
 ```
 
 Each of these commands have their own help.
 
-# Use case and workflow
+# Use-case and workflow
 
 ## Usage examples
 
@@ -59,57 +54,37 @@ Note: You need to run `gpg --import tests/assets/gpg/private.gpg` in order to su
 
 ### Decrypt
 
-The decrypt operation decrypts a secrets.yaml file and saves the decrypted result in secrets.yaml.dec:
+The `decrypt` operation decrypts a secrets.yaml file:
 
 ```bash
-helm secrets dec examples/sops/secrets.yaml
+helm secrets decrypt examples/sops/secrets.yaml
 ```
 
-The secrets.yaml.dec file:
+Output
 
 ```
 podAnnotations:
     secret: value
 ```
 
-Note that if the secrets.yaml.dec file already exists and is newer than secrets.yaml, it will not be overwritten:
+Inline decryption is supported, too.
 
 ```
-$ helm secrets dec examples/sops/secrets.yaml
-Decrypting examples/sops/secrets.yaml
-examples/sops/secrets.yaml.dec is newer than examples/sops/secrets.yaml
+$ helm secrets decrypt -i examples/sops/secrets.yaml
 ```
 
 ### Encrypt
 
-The encrypt operation encrypts a secrets.yaml.dec file and saves the encrypted result in secrets.yaml:
-
-If you initially have an unencrypted secrets.yaml file, it will be used as input and will be overwritten:
+The `encrypt` operation encrypts a file and output the encrypted file:
 
 ```
-$ helm secrets enc examples/sops/secrets.yaml
-Encrypting examples/sops/secrets.yaml
-Encrypted examples/sops/secrets.yaml
+$ helm secrets encrypt examples/sops/secrets.yaml
 ```
 
-If you already have an encrypted secrets.yaml file and a decrypted secrets.yaml.dec file, encrypting will encrypt secrets.yaml.dec to secrets.yaml:
+Inline encryption is supported, too.
 
 ```
-$ helm secrets dec examples/sops/secrets.yaml
-Decrypting examples/sops/secrets.yaml
-$ helm secrets enc examples/sops/secrets.yaml
-Encrypting examples/sops/secrets.yaml
-Encrypted examples/sops/secrets.yaml.dec to examples/sops/secrets.yaml
-```
-
-### View
-
-The view operation decrypts secrets.yaml and prints it to stdout:
-
-```
-$ helm secrets view examples/sops/secrets.yaml
-podAnnotations:
-    secret: value
+$ helm secrets decrypt -i examples/sops/secrets.yaml
 ```
 
 ### Edit
@@ -137,7 +112,7 @@ If you use git there is commit hook that prevents commiting decrypted files and 
 
 - Values/Secrets data are not a part of the chart. You need to manage your values, public charts contains mostly defaults without secrets - data vs code
 - To use the helm-secrets plugin you should build your `.sops.yaml` rules to make everything automatic
-- Use helm secrets <enc|dec|view|edit> for everyday work with you secret yaml files
+- Use helm secrets <encrypt|decrypt|edit> for everyday work with you secret yaml files
 - Use version control systems like GIT to work in teams and get history of versions
 - Everyday search keys is simple even with encrypted files or decrypt on-the-fly with git diff config included
 - With example helm_vars you can manage multiple world locations with multiple projects that contain multiple environments
@@ -179,7 +154,7 @@ creation_rules:
 - pgp: '000111122223333444AAAADDDDFFFFGGGG000999'
 
 ```
-For more help look at https://github.com/mozilla/sops
+For more help look at https://github.com/getsops/sops
 
 Multiple KMS and PGP are allowed.
 
@@ -191,7 +166,7 @@ Running helm to install/upgrade chart with our secrets files is simple with the 
 
 The wrapper enables you to call these helm commands with on-the-fly decryption of secrets files passed as `-f` or `--values` arguments. Instead of calling e.g. `helm install ...` you can call `helm secrets install ...` to get on-the-fly decryption.
 
-The diff command is a separate helm plugin, [helm-diff](https://github.com/databus23/helm-diff). Using it you can view the changes that would be deployed before deploying. In the same way as above, instead of calling e.g. `helm diff upgrade ...` you can call `helm secrets diff upgrade ...`, and so on.
+The diff command is a separate helm plugin, [helm-diff](https://github.com/databus23/helm-diff). Using it you can decrypt the changes that would be deployed before deploying. In the same way as above, instead of calling e.g. `helm diff upgrade ...` you can call `helm secrets diff upgrade ...`, and so on.
 
 Note that if a decrypted secrets.yaml.dec file exists and is newer then the secrets.yaml file, it will be used in the wrapped command rather than decrypting secrets.yaml.
 
@@ -269,7 +244,7 @@ removed helm_vars/secrets.yaml.dec
 ### Using secret values in Helm chart secrets template
 
 We just need to create Kubernetes secrets template in chart templates dir.
-For example in your charts repo you have `stable/helloworld/`. Inside this chart you should have `stable/helloworld/templates/` dir and then create the `stable/helloworld/templates/secrets.yaml` file with content as specified bellow.
+For example in your charts, repo you have `stable/helloworld/`. Inside this chart you should have `stable/helloworld/templates/` dir and then create the `stable/helloworld/templates/secrets.yaml` file with content as specified bellow.
 
 ```yaml
 apiVersion: v1
@@ -291,17 +266,25 @@ In this example you have a Kubernetes secret named "helloworld" and data inside 
 You can now use the "helloworld" secret in your deployment manifest (or any other manifest supporting secretKeyRef) in the env section like this:
 
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
-...
-...
-        containers:
-        - env:
-            - name: my_new_secret_key
-              valueFrom:
-                secretKeyRef:
-                  name: helloworld
-                  key: my_secret_key
+spec:
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      labels:
+        app: demo
+    spec:
+      containers:
+        - name: container
+          env:
+          - name: my_new_secret_key
+            valueFrom:
+              secretKeyRef:
+                name: helloworld
+                key: my_secret_key
 ```
 
 ## Alternative: decrypt via downloader plugin
@@ -347,3 +330,63 @@ Example:
 helm upgrade . -f 'secrets+gpg-import-kubernetes://default/gpg-key#examples/sops/secrets.yaml'
 helm upgrade . -f 'secrets+age-import-kubernetes://default/age-key.txt#examples/sops/secrets.yaml'
 ```
+
+### --set / --set-file
+
+```bash
+helm upgrade . --set-file 'mysql=secrets://secrets.yaml'
+helm upgrade . --set-file 'mysql.rootPassword=secrets+literal://ref+vault://secret/mysql#/rootPassword'
+
+# --set requires helm secrets upgrade call
+helm secrets upgrade . --set 'mysql=secrets://secrets.yaml'
+```
+
+
+## Evaluate secret reference inside helm template
+
+*requires helm 3.9+; vals 0.20+*
+
+helm secrets supports evaluating [vals](https://github.com/variantdev/vals) expressions inside helm templates by
+enable the flag `--evaluate-templates`.
+
+### Example
+
+**secrets.yaml**
+
+```yaml
+apiVersion: v1
+kind: Secret
+stringData:
+  password: "ref+awsssm://foo/bar?mode=singleparam#/BAR"
+```
+
+**Run**
+```bash
+helm secrets --evaluate-templates upgrade name .
+```
+
+
+# Override backend per value file
+
+In additional to global default [backend](Secret%20Backends.md) configuration `HELM_SECRETS_BACKEND`, it's possible to override a secret backend per file.
+
+This is useful for migration scenarios. To define a backend, put the name of the backend followed by a `!` as prefix
+before the file path, but after `://`.
+
+## Examples
+
+```bash
+helm secrets template -f 'sops!secrets/secret.yaml' -f 'vals!secrets/secret.yaml'
+helm template -f 'secrets://sops!secrets/secret.yaml' -f 'secrets://vals!secrets/secret.yaml'
+helm template -f 'secrets://sops!secrets/secret.yaml' -f 'secrets://vals!secrets/secret.yaml'
+helm template -f 'secrets+gpg-import://sops!/helm-secrets-private-keys/key.asc?secrets.yaml'
+helm template -f 'secrets://secrets.yaml' --set-file 'secrets+literal://vals!ref+vault://secret/mysql#/rootPassword'
+```
+
+## Restriction
+
+You can configure the allowed backend by the environment variable `HELM_SECRETS_ALLOWED_BACKENDS`, e.g. `HELM_SECRETS_ALLOWED_BACKENDS=sops,vals`
+
+## Limitations
+
+If a file path contains `!` and you do not want to override a secret backend, you have to define a `!` as prefix.

@@ -9,15 +9,34 @@
 
 # helm-secrets
 
+⭐ Don't forget to star this repository! ⭐
+
+## About
+
+helm-secrets is a Helm plugin for decrypt encrypted Helm **value files** on the fly.
+
+* Use [sops](https://github.com/getsops/sops) to encrypt value files and store them into git.
+* Store your secrets a cloud native secret manager like AWS SecretManager, Azure KeyVault or HashiCorp Vault and inject them inside value files or templates.
+* Use helm-secret in your favorite deployment tool or GitOps Operator like ArgoCD
+
+Who’s actually using helm-secrets? If you are using helm-secrets in your company or organization, we would like to invite you to create a PR to add your
+information to this [file](./USERS.md).
+
 ## Installation
 
 See [Installation](https://github.com/jkroepke/helm-secrets/wiki/Installation) for more information.
 
 ## Usage
 
+For full documentation, read [GitHub wiki](https://github.com/jkroepke/helm-secrets/wiki/Usage).
+
 ### Decrypt secrets via protocol handler
 
-Run decrypted command on specific value files. This is method is preferred over the plugin command below. On Windows, the command `helm secrets patch windows` needs to be run first.
+Run decrypted command on specific value files. 
+This is method is preferred over the plugin command below. 
+This mode is used in [ArgoCD](https://github.com/jkroepke/helm-secrets/wiki/ArgoCD-Integration) environments.
+
+On Windows, the command `helm secrets patch windows` needs to be run first.
 
 ```bash
 helm upgrade name . -f secrets://secrets.yaml
@@ -27,29 +46,91 @@ See [Usage](https://github.com/jkroepke/helm-secrets/wiki/Usage) for more inform
 
 ### Decrypt secrets via plugin command
 
-Wraps the whole helm command. Slow on multiple value files.
+Wraps the whole  `helm` command. Slow on multiple value files.
 
 ```bash
 helm secrets upgrade name . -f secrets.yaml
 ```
 
+
+### Evaluate secret reference inside helm template
+
+*requires helm 3.9+; vals 0.20+*
+
+helm-secrets supports evaluating [vals](https://github.com/variantdev/vals) expressions inside Helm templates by
+enable the flag `--evaluate-templates`.
+
+**secrets.yaml**
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: secret
+type: Opaque
+stringData:
+  password: "ref+awsssm://foo/bar?mode=singleparam#/BAR"
+```
+
+**Run**
+```bash
+helm secrets --evaluate-templates upgrade name .
+```
+
+## Cloud support
+
+Use AWS Secrets Manager or Azure KeyVault for storing secrets securely and reference them inside values.yaml
+
+```bash
+helm secrets --backend vals template bitnami/mysql --name-template mysql \
+  --set auth.rootPassword=ref+awsssm://foo/bar?mode=singleparam#/BAR
+```
+
+See [Cloud Integration](https://github.com/jkroepke/helm-secrets/wiki/Cloud-Integration) for more information.
+
+
 ## ArgoCD support
 
 For running helm-secrets with ArgoCD, see [ArgoCD Integration](https://github.com/jkroepke/helm-secrets/wiki/ArgoCD-Integration) for more information.
 
+### Example
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app
+spec:
+  source:
+    helm:
+      valueFiles:
+        - secrets+gpg-import:///helm-secrets-private-keys/key.asc?secrets.yaml
+        - secrets+gpg-import-kubernetes://argocd/helm-secrets-private-keys#key.asc?secrets.yaml
+        - secrets://secrets.yaml
+      # fileParameters (--set-file) are supported, too. 
+      fileParameters:
+        - name: config
+          path: secrets://secrets.yaml
+        # directly reference values from Cloud Providers
+        - name: mysql.rootPassword
+          path: secrets+literal://ref+azurekeyvault://my-vault/secret-a
+```
+
 ## Terraform support
 
-The Terraform helm provider does not [support downloader plugins](https://github.com/hashicorp/terraform-provider-helm).
+The Terraform Helm provider does not [support downloader plugins](https://github.com/hashicorp/terraform-provider-helm).
 
-helm secrets can be used together with the [terraform external data source provider](https://registry.terraform.io/providers/hashicorp/external/latest/docs/data-sources/data_source).
+helm-secrets can be used together with the [Terraform external data source provider](https://registry.terraform.io/providers/hashicorp/external/latest/docs/data-sources/data_source).
+
+### Example
 
 ```hcl
 data "external" "helm-secrets" {
-  program = ["helm", "secrets", "terraform", "../../examples/sops/secrets.yaml"]
+  program = ["helm", "secrets", "decrypt", "--terraform", "../../examples/sops/secrets.yaml"]
 }
 
 resource "helm_release" "example" {
-  ...
+  
 
   values = [
     file("../../examples/sops/values.yaml"),
@@ -57,53 +138,24 @@ resource "helm_release" "example" {
   ]
 }
 ```
-An example how to use helm-secrets with terraform could be found in [examples/terraform](examples/terraform/helm.tf).
 
-## Secret drivers
+An example of how to use helm-secrets with Terraform could be found in [examples/terraform](examples/terraform/helm.tf).
 
-helm-secrets supports multiplie secret drivers like [sops](https://github.com/mozilla/sops), [Hashicorp Vault](https://www.vaultproject.io/), [vals](https://github.com/variantdev/vals/), [avault](https://github.com/JackKrasn/avault) and more.
+## Secret backends
 
-See [Secret-Driver](https://github.com/jkroepke/helm-secrets/wiki/Secret-Driver) how to use them.
+helm-secrets support multiple secret backends.
+Currently, [sops](https://github.com/getsops/sops) and [vals](https://github.com/variantdev/vals/) are supported.
 
-Added additional secret driver avault. 
+See [Secret-Backends](https://github.com/jkroepke/helm-secrets/wiki/Secret-Backends) how to use them.
 
-### Ansible Vault
-
-The ansible vault secret driver can be enabled by define HELM_SECRETS_DRIVER=avault.
-
-The avault utility must be installed locally. 
-
-The secret phrase for decryption must be specified by define AVAULT_PASSWORD=xxxx
-
-## Main features
-
-The current version of this plugin using [mozilla/sops](https://github.com/mozilla/sops/) by default as backend.
-
-[Hashicorp Vault](http://vaultproject.io/) is supported as secret source since v3.2.0, too. In addition, [sops support vault since v3.6.0 natively](https://github.com/mozilla/sops#encrypting-using-hashicorp-vault).
-
-What kind of problems this plugin solves:
-
-- Simple replaceable layer integrated with helm command for encrypting, decrypting, view secrets files stored in any place.
-- On the fly decryption and cleanup for helm install/upgrade with a helm command wrapper
-
-If you are using sops (used by default) you have some additional features:
-
-- [Support for YAML/JSON structures encryption - Helm YAML secrets files](https://github.com/mozilla/sops#important-information-on-types)
-- [Encryption per value where visual Diff should work even on encrypted files](https://github.com/mozilla/sops/blob/master/example.yaml)
-- [On the fly decryption for git diff](https://github.com/mozilla/sops#showing-diffs-in-cleartext-in-git)
-- [Multiple key management solutions like PGP, AWS KMS and GCP KMS at same time](https://github.com/mozilla/sops#using-sops-yaml-conf-to-select-kms-pgp-for-new-files)
-- [Simple adding/removing keys](https://github.com/mozilla/sops#adding-and-removing-keys)
-- [With AWS KMS permissions management for keys](https://aws.amazon.com/kms/)
-- [Secrets files directory tree separation with recursive .sops.yaml files search](https://github.com/mozilla/sops#using-sops-yaml-conf-to-select-kms-pgp-for-new-files)
-- [Extracting sub-elements from encrypted file structure](https://github.com/mozilla/sops#extract-a-sub-part-of-a-document-tree)
-- [Encrypt only part of a file if needed](https://github.com/mozilla/sops#encrypting-only-parts-of-a-file). [Example encrypted file](https://github.com/mozilla/sops/blob/master/example.yaml)
+## Documentation
 
 An additional documentation, resources and examples can be found [here](https://github.com/jkroepke/helm-secrets/wiki/Usage).
 
 ## Moving parts of project
 
 - [`scripts/run.sh`](scripts/run.sh) - Main helm-secrets plugin code for all helm-secrets plugin actions available in `helm secrets help` after plugin install
-- [`scripts/drivers`](scripts/drivers) - Location of the in-tree secrets drivers
+- [`scripts/backends`](scripts/lib/backends) - Location of the in-tree secrets backends
 - [`scripts/commands`](scripts/commands) - Sub Commands of `helm secrets` are defined here.
 - [`scripts/lib`](scripts/lib) - Common functions used by `helm secrets`.
 - [`scripts/wrapper`](scripts/wrapper) - Wrapper scripts for Windows systems.
@@ -112,8 +164,14 @@ An additional documentation, resources and examples can be found [here](https://
 
 ## Copyright and license
 
-© 2020-2021 [Jan-Otto Kröpke (jkroepke)](https://github.com/jkroepke/helm-secrets)
+© 2020-2022 [Jan-Otto Kröpke (jkroepke)](https://github.com/jkroepke/helm-secrets)
 
 © 2017-2020 [Zendesk](https://github.com/zendesk/helm-secrets)
 
 Licensed under the [Apache License, Version 2.0](LICENSE)
+
+## Thanks
+
+- [JetBrains IDEs](https://www.jetbrains.com/?from=jkroepke)
+
+[![JetBrains-Logo (Haupt) logo](https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.svg)](https://www.jetbrains.com/?from=jkroepke)
