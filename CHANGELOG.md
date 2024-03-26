@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### [4.6.1-avault] - 2024-03-26
+
+### Added
+- Added a new custom backend for the AVAULT CLI 
+- Added `HELM_SECRETS_BACKEND=avault` for new backend
+
 ### Added
 - Added a new custom backend for the 1Password CLI, which is located at `examples/backends/onepassword.sh` (#431)
 
