@@ -17,7 +17,7 @@ VALUES_ALLOW_PATH_TRAVERSAL="${HELM_SECRETS_VALUES_ALLOW_PATH_TRAVERSAL:-true}"
 
 _file_get_protocol() {
     case "$1" in
-    http*)
+    http://* | https://*)
         echo "http"
         ;;
     *://*)
@@ -62,20 +62,34 @@ _file_get() {
     _file_"${file_type}"_get "$@"
 }
 
-_file_put() {
-    file_type=$(_file_get_protocol "${1}")
-
-    _file_"${file_type}"_put "$@"
-}
-
 _file_dec_name() {
     _basename="$(basename "${1}")"
 
     if [ "${DEC_DIR}" != "" ]; then
         printf '%s/%s%s%s' "${DEC_DIR}" "${DEC_PREFIX}" "${_basename}" "${DEC_SUFFIX}"
+    elif [ "${DECRYPT_SECRETS_IN_TMP_DIR}" = "true" ]; then
+        printf '%s/%s%s%s' "${TMPDIR}" "${DEC_PREFIX}" "${_basename}" "${DEC_SUFFIX}"
     elif [ "${1}" != "${_basename}" ]; then
         printf '%s/%s%s%s' "$(dirname "${1}")" "${DEC_PREFIX}" "${_basename}" "${DEC_SUFFIX}"
     else
         printf '%s%s%s' "${DEC_PREFIX}" "${_basename}" "${DEC_SUFFIX}"
     fi
+}
+
+_file_get_extension() {
+    case "${1}" in
+    *.yaml | *.yaml*)
+        echo "yaml"
+        ;;
+    *.json | *.json*)
+        echo "json"
+        ;;
+    *)
+        if grep -Fxq -- "---" "${1}"; then
+            echo "yaml"
+        else
+            echo "other"
+        fi
+        ;;
+    esac
 }

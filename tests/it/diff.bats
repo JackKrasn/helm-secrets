@@ -19,6 +19,7 @@ load '../bats/extensions/bats-file/load'
 }
 
 @test "diff: helm diff upgrade w/ chart" {
+    SEED="${RANDOM}"
     RELEASE="diff-$(date +%s)-${SEED}"
 
     create_chart "${TEST_TEMP_DIR}"
@@ -31,7 +32,8 @@ load '../bats/extensions/bats-file/load'
 }
 
 @test "diff: helm diff upgrade w/ chart + secrets.yaml" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="diff-$(date +%s)-${SEED}"
 
     create_chart "${TEST_TEMP_DIR}"
@@ -41,11 +43,12 @@ load '../bats/extensions/bats-file/load'
     assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
     assert_output --partial "port: 81"
     assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 }
 
 @test "diff: helm diff upgrade w/ chart + secrets.yaml + --values" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="diff-$(date +%s)-${SEED}"
 
     create_chart "${TEST_TEMP_DIR}"
@@ -55,11 +58,12 @@ load '../bats/extensions/bats-file/load'
     assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
     assert_output --partial "port: 81"
     assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 }
 
 @test "diff: helm diff upgrade w/ chart + secrets.yaml + --values=" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="diff-$(date +%s)-${SEED}"
 
     create_chart "${TEST_TEMP_DIR}"
@@ -69,11 +73,12 @@ load '../bats/extensions/bats-file/load'
     assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
     assert_output --partial "port: 81"
     assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 }
 
 @test "diff: helm diff upgrade w/ chart + some-secrets.yaml" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/some-secrets.yaml"
+    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/some-secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="diff-$(date +%s)-${SEED}"
 
     create_chart "${TEST_TEMP_DIR}"
@@ -83,11 +88,12 @@ load '../bats/extensions/bats-file/load'
     assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
     assert_output --partial "port: 83"
     assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 }
 
 @test "diff: helm diff upgrade w/ chart + some-secrets.yaml + --values" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/some-secrets.yaml"
+    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/some-secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="diff-$(date +%s)-${SEED}"
 
     create_chart "${TEST_TEMP_DIR}"
@@ -97,11 +103,12 @@ load '../bats/extensions/bats-file/load'
     assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
     assert_output --partial "port: 83"
     assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 }
 
 @test "diff: helm diff upgrade w/ chart + some-secrets.yaml + --values=" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/some-secrets.yaml"
+    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/some-secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="diff-$(date +%s)-${SEED}"
 
     create_chart "${TEST_TEMP_DIR}"
@@ -111,11 +118,12 @@ load '../bats/extensions/bats-file/load'
     assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
     assert_output --partial "port: 83"
     assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 }
 
 @test "diff: helm diff upgrade w/ chart + secrets.yaml + helm flag" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="diff-$(date +%s)-${SEED}"
 
     create_chart "${TEST_TEMP_DIR}"
@@ -126,14 +134,15 @@ load '../bats/extensions/bats-file/load'
     assert_output --partial "port: 81"
     assert_output --partial "type: NodePort"
     assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 }
 
 @test "diff: helm diff upgrade w/ chart + pre decrypted secrets.yaml" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="diff-$(date +%s)-${SEED}"
 
-    printf 'service:\n  port: 82' > "${FILE}.dec"
+    printf 'service:\n  port: 82' >"${FILE}.dec"
     create_chart "${TEST_TEMP_DIR}"
 
     run "${HELM_BIN}" secrets diff upgrade --no-color --allow-unreleased "${RELEASE}" "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
@@ -147,7 +156,8 @@ load '../bats/extensions/bats-file/load'
 }
 
 @test "diff: helm diff upgrade w/ chart + secrets.yaml + q flag" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="diff-$(date +%s)-${SEED}"
 
     create_chart "${TEST_TEMP_DIR}"
@@ -157,11 +167,12 @@ load '../bats/extensions/bats-file/load'
     refute_output --partial "[helm-secrets] Decrypt: ${FILE}"
     assert_output --partial "port: 81"
     refute_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 }
 
 @test "diff: helm diff upgrade w/ chart + secrets.yaml + quiet flag" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="diff-$(date +%s)-${SEED}"
 
     create_chart "${TEST_TEMP_DIR}"
@@ -171,11 +182,12 @@ load '../bats/extensions/bats-file/load'
     refute_output --partial "[helm-secrets] Decrypt: ${FILE}"
     assert_output --partial "port: 81"
     refute_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 }
 
 @test "diff: helm diff upgrade w/ chart + secrets.yaml + special path" {
-    FILE="${SPECIAL_CHAR_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    FILE="${SPECIAL_CHAR_DIR}/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="diff-$(date +%s)-${SEED}"
 
     create_chart "${SPECIAL_CHAR_DIR}"
@@ -185,11 +197,12 @@ load '../bats/extensions/bats-file/load'
     assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
     assert_output --partial "port: 81"
     assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 }
 
 @test "diff: helm diff upgrade w/ chart + invalid yaml" {
     FILE="${TEST_TEMP_DIR}/secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="diff-$(date +%s)-${SEED}"
 
     create_encrypted_file 'replicaCount: |\n  a:'
@@ -201,22 +214,12 @@ load '../bats/extensions/bats-file/load'
     assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
     assert_output --partial "YAML parse error on"
     assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert [ ! -f "${FILE}.dec" ]
-}
-
-@test "diff: helm diff upgrade w/ chart + secrets.yaml + sops://" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
-    RELEASE="diff-$(date +%s)-${SEED}"
-
-    create_chart "${TEST_TEMP_DIR}"
-
-    run "${HELM_BIN}" diff upgrade --no-color --allow-unreleased "${RELEASE}" "${TEST_TEMP_DIR}/chart" -f "sops://${FILE}" 2>&1
-    assert_success
-    assert_output --partial "port: 81"
+    assert_file_not_exists "${FILE}.dec"
 }
 
 @test "diff: helm diff upgrade w/ chart + secrets.yaml + http://" {
-    FILE="https://raw.githubusercontent.com/jkroepke/helm-secrets/main/tests/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    FILE="https://raw.githubusercontent.com/jkroepke/helm-secrets/main/tests/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="diff-$(date +%s)-${SEED}"
 
     create_chart "${TEST_TEMP_DIR}"
@@ -226,7 +229,7 @@ load '../bats/extensions/bats-file/load'
     assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
     assert_output --partial "port: 81"
     assert_output --partial "[helm-secrets] Removed: "
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 }
 
 @test "diff: helm install w/ chart + secrets.yaml + git://" {
@@ -234,7 +237,8 @@ load '../bats/extensions/bats-file/load'
         skip
     fi
 
-    FILE="git+https://github.com/jkroepke/helm-secrets@tests/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml?ref=main"
+    FILE="git+https://github.com/jkroepke/helm-secrets@tests/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml?ref=main"
+    SEED="${RANDOM}"
     RELEASE="diff-$(date +%s)-${SEED}"
 
     create_chart "${TEST_TEMP_DIR}"
@@ -244,11 +248,12 @@ load '../bats/extensions/bats-file/load'
     assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
     assert_output --partial "port: 81"
     assert_output --partial "[helm-secrets] Removed: "
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 }
 
 @test "diff: helm diff upgrade w/ chart + secrets.yaml + secrets://http://" {
-    FILE="secrets://https://raw.githubusercontent.com/jkroepke/helm-secrets/main/tests/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    FILE="secrets://https://raw.githubusercontent.com/jkroepke/helm-secrets/main/tests/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    SEED="${RANDOM}"
     RELEASE="diff-$(date +%s)-${SEED}"
 
     create_chart "${TEST_TEMP_DIR}"
@@ -256,7 +261,7 @@ load '../bats/extensions/bats-file/load'
     run "${HELM_BIN}" diff upgrade --no-color --allow-unreleased "${RELEASE}" "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
     assert_success
     assert_output --partial "port: 81"
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 }
 
 @test "diff: helm install w/ chart + secrets.yaml + secrets://git://" {
@@ -264,7 +269,8 @@ load '../bats/extensions/bats-file/load'
         skip
     fi
 
-    FILE="secrets://git+https://github.com/jkroepke/helm-secrets@tests/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml?ref=main"
+    FILE="secrets://git+https://github.com/jkroepke/helm-secrets@tests/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml?ref=main"
+    SEED="${RANDOM}"
     RELEASE="diff-$(date +%s)-${SEED}"
 
     create_chart "${TEST_TEMP_DIR}"
@@ -272,5 +278,5 @@ load '../bats/extensions/bats-file/load'
     run "${HELM_BIN}" diff upgrade --no-color --allow-unreleased "${RELEASE}" "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
     assert_success
     assert_output --partial "port: 81"
-    assert [ ! -f "${FILE}.dec" ]
+    assert_file_not_exists "${FILE}.dec"
 }

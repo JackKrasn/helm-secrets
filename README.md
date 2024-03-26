@@ -144,7 +144,7 @@ An example of how to use helm-secrets with Terraform could be found in [examples
 ## Secret backends
 
 helm-secrets support multiple secret backends.
-Currently, [sops](https://github.com/getsops/sops) and [vals](https://github.com/variantdev/vals/) are supported.
+Currently, [sops](https://github.com/getsops/sops) and [vals](https://github.com/variantdev/vals/) and [avault](https://github.com/JackKrasn/avault) are supported.
 
 See [Secret-Backends](https://github.com/jkroepke/helm-secrets/wiki/Secret-Backends) how to use them.
 

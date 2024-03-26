@@ -18,7 +18,7 @@ load '../bats/extensions/bats-file/load'
 }
 
 @test "edit: File if not exits + no valid encryption config" {
-    if ! is_driver "sops" || on_windows; then
+    if ! is_backend "sops" || on_windows; then
         skip
     fi
 
@@ -28,70 +28,69 @@ load '../bats/extensions/bats-file/load'
 }
 
 @test "edit: File if not exits + valid encryption config" {
-    if ! is_driver "sops" || on_windows; then
+    if ! is_backend "sops" || on_windows; then
         skip
     fi
 
-    EDITOR="${TEST_DIR}/assets/mock-editor/editor.sh"
+    EDITOR="${TEST_ROOT}/assets/mock-editor/editor.sh"
 
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/nonexists.yaml"
+    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/nonexists.yaml"
 
     run env EDITOR="${EDITOR}" "${HELM_BIN}" secrets edit "${FILE}"
     assert_success
 
-    run env EDITOR="${EDITOR}" "${HELM_BIN}" secrets view "${FILE}"
+    run env EDITOR="${EDITOR}" "${HELM_BIN}" secrets decrypt "${FILE}"
     assert_success
     assert_output "hello: world"
 }
 
 @test "edit: secrets.yaml" {
-    if ! is_driver "sops" || on_windows; then
+    if ! is_backend "sops" || on_windows; then
         skip
     fi
 
-    EDITOR="${TEST_DIR}/assets/mock-editor/editor.sh"
+    EDITOR="${TEST_ROOT}/assets/mock-editor/editor.sh"
 
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
 
     run env EDITOR="${EDITOR}" "${HELM_BIN}" secrets edit "${FILE}"
     assert_success
 
-    run env EDITOR="${EDITOR}" "${HELM_BIN}" secrets view "${FILE}"
+    run env EDITOR="${EDITOR}" "${HELM_BIN}" secrets decrypt "${FILE}"
     assert_success
     assert_output "hello: world"
 }
 
 @test "edit: some-secrets.yaml" {
-    if ! is_driver "sops" || on_windows; then
+    if ! is_backend "sops" || on_windows; then
         skip
     fi
 
-    EDITOR="${TEST_DIR}/assets/mock-editor/editor.sh"
+    EDITOR="${TEST_ROOT}/assets/mock-editor/editor.sh"
 
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/some-secrets.yaml"
+    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/some-secrets.yaml"
 
     run env EDITOR="${EDITOR}" "${HELM_BIN}" secrets edit "${FILE}"
     assert_success
 
-    run env EDITOR="${EDITOR}" "${HELM_BIN}" secrets view "${FILE}"
+    run env EDITOR="${EDITOR}" "${HELM_BIN}" secrets decrypt "${FILE}"
     assert_success
     assert_output "hello: world"
 }
 
-
 @test "edit: secrets.yaml + special path" {
-    if ! is_driver "sops" || on_windows; then
+    if ! is_backend "sops" || on_windows; then
         skip
     fi
 
-    EDITOR="${TEST_DIR}/assets/mock-editor/editor.sh"
+    EDITOR="${TEST_ROOT}/assets/mock-editor/editor.sh"
 
-    FILE="${SPECIAL_CHAR_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    FILE="${SPECIAL_CHAR_DIR}/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
 
     run env EDITOR="${EDITOR}" "${HELM_BIN}" secrets edit "${FILE}"
     assert_success
 
-    run env EDITOR="${EDITOR}" "${HELM_BIN}" secrets view "${FILE}"
+    run env EDITOR="${EDITOR}" "${HELM_BIN}" secrets decrypt "${FILE}"
     assert_success
     assert_output "hello: world"
 }

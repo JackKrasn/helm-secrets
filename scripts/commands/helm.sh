@@ -2,8 +2,8 @@
 
 set -euf
 
-# shellcheck source=scripts/commands/dec.sh
-. "${SCRIPT_DIR}/commands/dec.sh"
+# shellcheck source=scripts/commands/decrypt.sh
+. "${SCRIPT_DIR}/commands/decrypt.sh"
 
 helm_command_usage() {
     cat <<EOF
@@ -14,29 +14,29 @@ This is a wrapper for "helm [command]". It will detect -f and
 [command]".
 
 Example:
-  $ helm secrets upgrade <HELM UPGRADE OPTIONS>
-  $ helm secrets lint <HELM LINT OPTIONS>
+  $ helm secrets <HELM SECRETS OPTIONS> upgrade <HELM UPGRADE OPTIONS>
+  $ helm secrets <HELM SECRETS OPTIONS> lint <HELM LINT OPTIONS>
 
 Typical usage:
   $ helm secrets upgrade i1 stable/nginx-ingress -f values.test.yaml -f secrets.test.yaml
-  $ helm secrets lint ./my-chart -f values.test.yaml -f secrets.test.yaml
+  $ helm secrets -b vals lint ./my-chart -f values.test.yaml -f secrets.test.yaml
 
 EOF
 }
 
-decrypted_files=$(_mktemp)
+decrypted_file_list=$(_mktemp)
 
 _trap_hook() {
-    if [ -s "${decrypted_files}" ]; then
+    if [ -s "${decrypted_file_list}" ]; then
         if [ "${QUIET}" = "false" ]; then
             echo >&2
             # shellcheck disable=SC2016
-            xargs -0 -n1 sh -c 'rm "$1" && printf "[helm-secrets] Removed: %s\n" "$1"' sh >&2 <"${decrypted_files}"
+            xargs -0 -n1 sh -c 'rm "$1" && printf "[helm-secrets] Removed: %s\n" "$1"' sh >&2 <"${decrypted_file_list}"
         else
-            xargs -0 rm >&2 <"${decrypted_files}"
+            xargs -0 rm >&2 <"${decrypted_file_list}"
         fi
 
-        rm "${decrypted_files}"
+        rm "${decrypted_file_list}"
     fi
 }
 
@@ -44,75 +44,217 @@ helm_wrapper() {
     argc=$#
     j=0
 
-    SKIP_ARG_PARSE=false
     while [ $j -lt $argc ]; do
-        if [ "${SKIP_ARG_PARSE}" = "true" ]; then
-            set -- "$@" "$1"
-        else
+        case "$1" in
+        --set | --set=?* | --set-string | --set-string=?* | --set-json | --set-json=?*)
+            _1="${1}"
 
-            case "$1" in
-            --)
-                # skip --, and what remains are the cmd args
-                SKIP_ARG_PARSE=true
-                set -- "$@" "$1"
+            case "${_1}" in
+            --set=* | --set-string=* | --set-json=*)
+                literals="${_1#*=}"
+
+                set -- "$@" "${_1%%=*}"
                 ;;
-            -f | --values | --values=?*)
-                case "$1" in
-                *=*)
-                    file="${1#*=}"
+            *)
+                literals="${2}"
 
-                    set -- "$@" "${1%%=*}"
-                    ;;
-                *)
-                    file="${2}"
+                set -- "$@" "$1"
+                shift
+                j=$((j + 1))
+                ;;
+            esac
 
-                    set -- "$@" "$1"
-                    shift
-                    j=$((j + 1))
+            decrypted_literals=""
+
+            IFS=","
+            _literal=""
+
+            set_list=false
+
+            for literal in ${literals}; do
+                unset IFS
+
+                opt_prefix=""
+
+                case "${literal}" in
+                *\\)
+                    _literal="${literal}"
+                    continue
                     ;;
                 esac
 
+                if [ "${_literal}" != "" ]; then
+                    literal="${_literal},${literal}"
+                    _literal=""
+                fi
+
+                if [ "${set_list}" = "false" ]; then
+                    opt_prefix="${literal%%=*}"
+
+                    if [ "$opt_prefix" != "" ]; then
+                        opt_prefix="${opt_prefix}="
+                    fi
+
+                    literal="${literal#*=}"
+                fi
+
+                case "${literal}" in
+                \\\{*) ;;
+                *\\\}) ;;
+                \{*)
+                    set_list=true
+                    ;;
+                *\})
+                    set_list=false
+                    ;;
+                esac
+
+                # Force secret backend
+                if [ "${literal#*!}" != "${literal}" ]; then
+                    if is_secret_backend "${literal%%\!*}"; then
+                        load_secret_backend "${literal%%\!*}"
+                        literal="${literal#*!}"
+                    else
+                        load_secret_backend "${DEFAULT_SECRET_BACKEND}"
+                    fi
+                else
+                    load_secret_backend "${DEFAULT_SECRET_BACKEND}"
+                fi
+
+                if ! decrypted_literal=$(backend_decrypt_literal "${literal}"); then
+                    fatal 'Unable to decrypt literal value %s' "${literal}"
+                fi
+
+                if [ "${decrypted_literal}" = "${literal}" ]; then
+                    decrypted_literals="${decrypted_literals}${opt_prefix}${decrypted_literal},"
+                else
+                    decrypted_literals="${decrypted_literals}${opt_prefix}$(printf '%s' "${decrypted_literal}" | sed -e 's/\\/\\\\/g' | sed -e 's/,/\\,/g'),"
+                fi
+            done
+
+            set -- "$@" "${decrypted_literals%*,}"
+            ;;
+        -f | --values | --values=?* | --set-file | --set-file=?*)
+            _1="${1}"
+
+            case "${_1}" in
+            --values=* | --set-file=*)
+                files="${_1#*=}"
+
+                set -- "$@" "${_1%%=*}"
+                ;;
+            *)
+                files="${2}"
+
+                set -- "$@" "$1"
+                shift
+                j=$((j + 1))
+                ;;
+            esac
+
+            decrypted_files=""
+
+            IFS='
+'
+
+            for file in $(printf '%s' "${files}" | sed -E 's/([^\\]),/\1\n/g'); do
+                unset IFS
+
+                case "$_1" in
+                -f | --values | --values=?*)
+                    double_escape_need=0
+                    sops_type="yaml"
+                    opt_prefix=""
+                    ;;
+                --set-file | --set-file=?*)
+                    double_escape_need=1
+                    sops_type="auto"
+                    opt_prefix="${file%%=*}="
+                    file="${file#*=}"
+                    ;;
+                esac
+
+                # Ignore error on files beginning with ?
+                if [ "${file##\?}" != "${file}" ]; then
+                    file="${file##\?}"
+                    IGNORE_MISSING_VALUES=true
+                fi
+
+                # Force secret backend
+                if [ "${file#*!}" != "${file}" ]; then
+                    if is_secret_backend "${file%%\!*}"; then
+                        load_secret_backend "${file%%\!*}"
+                        file="${file#*!}"
+                    else
+                        load_secret_backend "${DEFAULT_SECRET_BACKEND}"
+                    fi
+                else
+                    load_secret_backend "${DEFAULT_SECRET_BACKEND}"
+                fi
+
                 if ! real_file=$(_file_get "${file}"); then
-                    fatal 'File does not exist: %s' "${file}"
+                    if [ "${IGNORE_MISSING_VALUES}" = "true" ]; then
+                        real_file="$(_mktemp)"
+                    else
+                        fatal 'File does not exist: %s' "${file}"
+                    fi
                 fi
 
                 file_dec="$(_file_dec_name "${real_file}")"
                 if [ -f "${file_dec}" ]; then
-                    if _helm_windows_path_required "${file_dec}"; then
-                        set -- "$@" "$(_convert_path "${file_dec}")"
-                    else
-                        set -- "$@" "$file_dec"
-                    fi
+                    decrypted_files="${decrypted_files}${opt_prefix}$(_helm_winpath "${file_dec}" "${double_escape_need}"),"
 
                     if [ "${QUIET}" = "false" ]; then
-                        printf '[helm-secrets] Decrypt skipped: %s\n' "${file}" >&2
+                        log 'Decrypt skipped: %s' "${file}"
                     fi
                 else
-                    if decrypt_helper "${real_file}"; then
-                        if _helm_windows_path_required "${file_dec}"; then
-                            set -- "$@" "$(_convert_path "${file_dec}")"
-                        else
-                            set -- "$@" "$file_dec"
-                        fi
-                        printf '%s\0' "${file_dec}" >>"${decrypted_files}"
+                    if decrypt_helper "${real_file}" "${sops_type}"; then
+                        printf '%s\0' "${file_dec}" >>"${decrypted_file_list}"
 
                         if [ "${QUIET}" = "false" ]; then
-                            printf '[helm-secrets] Decrypt: %s\n' "${file}" >&2
+                            log 'Decrypt: %s' "${file}"
                         fi
+
+                        decrypted_files="${decrypted_files}${opt_prefix}$(_helm_winpath "${file_dec}" "${double_escape_need}"),"
                     else
-                        set -- "$@" "$real_file"
+                        decrypted_files="${decrypted_files}${opt_prefix}$(_helm_winpath "${real_file}" "${double_escape_need}"),"
                     fi
                 fi
-                ;;
-            *)
+            done
+
+            set -- "$@" "${decrypted_files%*,}"
+
+            ;;
+        *)
+            if [ -d "$1" ] || [ -f "$1" ]; then
+                set -- "$@" "$(_helm_winpath "${1}")"
+            else
                 set -- "$@" "$1"
-                ;;
-            esac
-        fi
+            fi
+            ;;
+        esac
 
         shift
         j=$((j + 1))
     done
+
+    if [ "${EVALUATE_TEMPLATES}" = "true" ]; then
+        set -- "$@" "--post-renderer" "${HELM_BIN}"
+
+        if [ "${HELM_DEBUG:-}" = "1" ] || [ "${HELM_DEBUG:-}" = "true" ] || [ -n "${HELM_SECRETS_DEBUG+x}" ]; then
+            set -- "$@" "--post-renderer-args" "--debug"
+        fi
+
+        set -- "$@" "--post-renderer-args" "secrets"
+        set -- "$@" "--post-renderer-args" "--backend" "--post-renderer-args" "${SECRET_BACKEND}"
+        if [ "${SECRET_BACKEND_ARGS}" != "" ]; then
+            set -- "$@" "--post-renderer-args" "--backend-args" "--post-renderer-args" "${SECRET_BACKEND_ARGS}"
+        fi
+        if [ "${EVALUATE_TEMPLATES_DECODE_SECRETS}" = "true" ]; then
+            set -- "$@" "--post-renderer-args" "--evaluate-templates-decode-secrets"
+        fi
+        set -- "$@" "--post-renderer-args" "post-renderer"
+    fi
 
     "${HELM_BIN}" ${TILLER_HOST:+--host "$TILLER_HOST"} "$@"
 }
@@ -124,19 +266,4 @@ helm_command() {
     fi
 
     helm_wrapper "$@"
-}
-
-_helm_windows_path_required() {
-    if ! on_wsl; then
-        return 1
-    fi
-
-    case "${HELM_BIN}" in
-    *.exe)
-        return 0
-        ;;
-    *)
-        return 1
-        ;;
-    esac
 }
