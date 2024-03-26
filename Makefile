@@ -2,7 +2,7 @@
 DIST_DIR := $(CURDIR)/dist
 
 GIT_COMMIT=$(shell git rev-parse HEAD)
-VERSION=$(shell autotag -n)
+VERSION=$(shell sed -n 's/version: "\(.*\)"/\1/p' plugin.yaml)
 GITHUB_USER="JackKrasn"
 GITHUB_REPO="helm-secrets"
 
@@ -30,4 +30,3 @@ clean:
 release: clean build
 	github-release release -u ${GITHUB_USER} -r ${GITHUB_REPO} -t v${VERSION} -c ${GIT_COMMIT} -n v${VERSION}
 	github-release upload -u ${GITHUB_USER} -r ${GITHUB_REPO} -t v${VERSION} -n helm-secrets-${VERSION}.tar.gz -f dist/helm-secrets-${VERSION}.tar.gz
-	autotag
