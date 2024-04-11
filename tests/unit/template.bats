@@ -8,209 +8,394 @@ load '../bats/extensions/bats-file/load'
 
 @test "template: helm template" {
     run "${HELM_BIN}" secrets template
-    assert_success
+
     assert_output --partial 'helm secrets [ OPTIONS ] template'
+    assert_success
 }
 
 @test "template: helm template --help" {
     run "${HELM_BIN}" secrets template --help
-    assert_success
+
     assert_output --partial 'helm secrets [ OPTIONS ] template'
+    assert_success
 }
 
 @test "template: helm template w/ chart" {
     create_chart "${TEST_TEMP_DIR}"
 
     run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" 2>&1
-    assert_success
+
     assert_output --partial "port: 80"
+    assert_success
 }
 
 @test "template: helm template w/ chart + secrets.yaml" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
-    assert_success
-    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
     assert_output --partial "port: 81"
-    assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert_file_not_exist "${FILE}.dec"
+    assert_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
 }
 
 @test "template: helm template w/ chart + secrets.yaml + --values" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" --values "${FILE}" 2>&1
-    assert_success
-    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" --values "${VALUES_PATH}" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
     assert_output --partial "port: 81"
-    assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert_file_not_exist "${FILE}.dec"
+    assert_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
 }
 
 @test "template: helm template w/ chart + secrets.yaml + --values=" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" --values="${FILE}" 2>&1
-    assert_success
-    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" --values="${VALUES_PATH}" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
     assert_output --partial "port: 81"
-    assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert_file_not_exist "${FILE}.dec"
+    assert_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
 }
 
 @test "template: helm template w/ chart + secrets.yaml.gotpl" {
-    if ! is_driver "sops"; then
+    if ! is_backend "sops"; then
         skip
     fi
 
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml.gotpl"
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml.gotpl"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
-    assert_success
-    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
     assert_output --partial "port: 85"
-    assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert_file_not_exist "${FILE}.dec"
+    assert_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_file_not_exists "${VALUES_PATH}.dec"
+    assert_success
 }
 
 @test "template: helm template w/ chart + some-secrets.yaml" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/some-secrets.yaml"
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/some-secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
-    assert_success
-    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
     assert_output --partial "port: 83"
-    assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert_file_not_exist "${FILE}.dec"
+    assert_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_file_not_exists "${VALUES_PATH}.dec"
+    assert_success
 }
 
 @test "template: helm template w/ chart + values.yaml" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/values.yaml"
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/values.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
-    assert_success
-    refute_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
+    refute_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
     assert_output --partial "port: 85"
-    refute_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert_file_not_exist "${FILE}.dec"
+    refute_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
 }
 
 @test "template: helm template w/ chart + some-secrets.yaml + --values" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/some-secrets.yaml"
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/some-secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" --values "${FILE}" 2>&1
-    assert_success
-    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" --values "${VALUES_PATH}" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
     assert_output --partial "port: 83"
-    assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert_file_not_exist "${FILE}.dec"
+    assert_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
 }
 
 @test "template: helm template w/ chart + some-secrets.yaml + --values=" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/some-secrets.yaml"
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/some-secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" --values="${FILE}" 2>&1
-    assert_success
-    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" --values="${VALUES_PATH}" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
     assert_output --partial "port: 83"
-    assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert_file_not_exist "${FILE}.dec"
+    assert_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
 }
 
 @test "template: helm template w/ chart + secrets.yaml + helm flag" {
-    if on_wsl; then
-        skip
-    fi
-
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${FILE}" --set "service.type=NodePort" 2>&1
-    assert_success
-    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" --set "service.type=NodePort" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
     assert_output --partial "port: 81"
     assert_output --partial "type: NodePort"
-    assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert_file_not_exist "${FILE}.dec"
+    assert_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets.yaml + helm flag + multiline" {
+    if on_windows; then
+        skip
+    fi
+
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" --set "podAnnotations.second=key1:
+key2: value" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
+    assert_output --partial "port: 81"
+    assert_output --partial "key1:"
+    assert_output --partial "key2: value"
+    assert_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + not-exists.yaml" {
+    VALUES="not-exists.yaml"
+    VALUES_PATH="${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
+    assert_output --partial "[helm-secrets] File does not exist: ${VALUES_PATH}"
+    assert_failure
+}
+
+@test "template: helm template w/ chart + http.yaml" {
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    touch "http.yaml"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "http.yaml" 2>&1
+
+    assert_output --partial "port: 80"
+    assert_success
+    assert_file_not_exists "http.yaml.dec"
+}
+
+@test "template: helm template w/ chart + not-exists.yaml + HELM_SECRETS_IGNORE_MISSING_VALUES=false" {
+    VALUES="not-exists.yaml"
+    VALUES_PATH="${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run env HELM_SECRETS_IGNORE_MISSING_VALUES=false WSLENV="HELM_SECRETS_IGNORE_MISSING_VALUES:${WSLENV}" \
+        "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" \
+        -f "${VALUES_PATH}" 2>&1
+
+    assert_output --partial "[helm-secrets] File does not exist: ${VALUES_PATH}"
+    assert_failure
+}
+
+@test "template: helm template w/ chart + not-exists.yaml + HELM_SECRETS_IGNORE_MISSING_VALUES=true" {
+    VALUES="not-exists.yaml"
+    VALUES_PATH="${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run env HELM_SECRETS_IGNORE_MISSING_VALUES=true WSLENV="HELM_SECRETS_IGNORE_MISSING_VALUES:${WSLENV}" \
+        "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" \
+        -f "${VALUES_PATH}" 2>&1
+
+    refute_output --partial "[helm-secrets] File does not exist: ${VALUES_PATH}"
+    assert_output --partial "port: 80"
+    assert_success
+}
+
+@test "template: helm template w/ chart + not-exists.yaml + ignore errors" {
+    VALUES="not-exists.yaml"
+    VALUES_PATH="?${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" \
+        -f "${VALUES_PATH}" 2>&1
+
+    refute_output --partial "[helm-secrets] File does not exist: ${VALUES_PATH}"
+    assert_output --partial "port: 80"
+    assert_success
+}
+
+@test "template: helm template w/ chart + not-exists.yaml + --ignore-missing-values" {
+    VALUES="not-exists.yaml"
+    VALUES_PATH="${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run env "${HELM_BIN}" secrets --ignore-missing-values template "${TEST_TEMP_DIR}/chart" \
+        -f "${VALUES_PATH}" 2>&1
+
+    refute_output --partial "[helm-secrets] File does not exist: ${VALUES_PATH}"
+    assert_output --partial "port: 80"
+    assert_success
+}
+
+@test "template: helm template w/ chart + not-exists.yaml + --ignore-missing-values false" {
+    VALUES="not-exists.yaml"
+    VALUES_PATH="${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run env "${HELM_BIN}" secrets --ignore-missing-values false template "${TEST_TEMP_DIR}/chart" \
+        -f "${VALUES_PATH}" 2>&1
+
+    assert_output --partial "[helm-secrets] File does not exist: ${VALUES_PATH}"
+    assert_failure
+}
+
+@test "template: helm template w/ chart + not-exists.yaml + --ignore-missing-values true" {
+    VALUES="not-exists.yaml"
+    VALUES_PATH="${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run env "${HELM_BIN}" secrets --ignore-missing-values true template "${TEST_TEMP_DIR}/chart" \
+        -f "${VALUES_PATH}" 2>&1
+
+    refute_output --partial "[helm-secrets] File does not exist: ${VALUES_PATH}"
+    assert_output --partial "port: 80"
+    assert_success
+}
+
+@test "template: helm template w/ chart + not-exists.yaml + --ignore-missing-values=false" {
+    VALUES="not-exists.yaml"
+    VALUES_PATH="${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run env "${HELM_BIN}" secrets --ignore-missing-values=false template "${TEST_TEMP_DIR}/chart" \
+        -f "${VALUES_PATH}" 2>&1
+
+    assert_output --partial "[helm-secrets] File does not exist: ${VALUES_PATH}"
+    assert_failure
+}
+
+@test "template: helm template w/ chart + not-exists.yaml + --ignore-missing-values=true" {
+    VALUES="not-exists.yaml"
+    VALUES_PATH="${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run env "${HELM_BIN}" secrets --ignore-missing-values=true template "${TEST_TEMP_DIR}/chart" \
+        -f "${VALUES_PATH}" 2>&1
+
+    refute_output --partial "[helm-secrets] File does not exist: ${VALUES_PATH}"
+    assert_output --partial "port: 80"
+    assert_success
 }
 
 @test "template: helm template w/ chart + secrets.yaml + helm flag + --" {
-    if on_wsl; then
+    if on_cygwin; then
         skip
     fi
 
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" secrets template -f "${FILE}" --set "service.type=NodePort" -- "${TEST_TEMP_DIR}/chart" 2>&1
-    assert_success
-    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    run "${HELM_BIN}" secrets template -f "${VALUES_PATH}" --set "service.type=NodePort" -- "${TEST_TEMP_DIR}/chart" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
     assert_output --partial "port: 81"
     assert_output --partial "type: NodePort"
-    assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert_file_not_exist "${FILE}.dec"
+    assert_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
 }
 
 @test "template: helm template w/ chart + pre decrypted secrets.yaml" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
-    printf 'service:\n  port: 82' > "${FILE}.dec"
+    printf 'service:\n  port: 82' >"${VALUES_PATH}.dec"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
-    assert_success
-    assert_output --partial "[helm-secrets] Decrypt skipped: ${FILE}"
-    assert_output --partial "port: 82"
-    assert_file_exist "${FILE}.dec"
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
 
-    run rm "${FILE}.dec"
+    assert_output -e "\[helm-secrets\] Decrypt skipped: .*${VALUES}"
+    assert_output --partial "port: 82"
+    assert_success
+    assert_file_exists "${VALUES_PATH}.dec"
+
+    run rm "${VALUES_PATH}.dec"
     assert_success
 }
 
 @test "template: helm template w/ chart + secrets.yaml + q flag" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" secrets -q template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
-    assert_success
-    refute_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    run "${HELM_BIN}" secrets -q template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
+    refute_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
     assert_output --partial "port: 81"
-    refute_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert_file_not_exist "${FILE}.dec"
+    refute_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
 }
 
 @test "template: helm template w/ chart + secrets.yaml + quiet flag" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" secrets --quiet template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
-    assert_success
-    refute_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    run "${HELM_BIN}" secrets --quiet template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
+    refute_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
     assert_output --partial "port: 81"
-    refute_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert_file_not_exist "${FILE}.dec"
+    refute_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
 }
 
 @test "template: helm template w/ chart + secrets.yaml + special path" {
@@ -218,533 +403,1824 @@ load '../bats/extensions/bats-file/load'
         skip "Skip on Windows"
     fi
 
-    FILE="${SPECIAL_CHAR_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${SPECIAL_CHAR_DIR}/${VALUES}"
 
     create_chart "${SPECIAL_CHAR_DIR}"
 
-    run "${HELM_BIN}" secrets template "${SPECIAL_CHAR_DIR}/chart" -f "${FILE}" 2>&1
-    assert_success
-    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    run "${HELM_BIN}" secrets template "${SPECIAL_CHAR_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
     assert_output --partial "port: 81"
-    assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert_file_not_exist "${FILE}.dec"
+    assert_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
 }
 
 @test "template: helm template w/ chart + invalid yaml" {
-    FILE="${TEST_TEMP_DIR}/secrets.yaml"
+    if [[ "${VALS_BIN}" = *".exe" ]]; then
+        skip "Unix path w/ vals.exe"
+    fi
+
+    VALUES="secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_encrypted_file 'replicaCount: |\n  a:'
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
-    assert_failure
-    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
     assert_output --partial "Error: YAML parse error"
-    assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert_file_not_exist "${FILE}.dec"
+    assert_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_failure
+    assert_file_not_exists "${VALUES_PATH}.dec"
 }
 
 @test "template: helm template w/ chart + secrets.empty.yaml" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.empty.yaml"
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.empty.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
-    assert_success
-    refute_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
+    refute_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
     assert_output --partial "port: 80"
-    refute_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert_file_not_exist "${FILE}.dec"
+    refute_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets.yaml + wrapper --set service.port w/ error" {
+    if ! is_backend "vals"; then
+        skip
+    fi
+
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" \
+        --set 'service.port=ref+file://notexists' 2>&1
+
+    refute_output --partial "port: "
+    assert_failure
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets.yaml + wrapper --set service.port" {
+    if ! is_backend "vals"; then
+        skip
+    fi
+
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" \
+        --set service.port=ref+echo://87 2>&1
+
+    assert_output --partial "port: 87"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets.yaml + wrapper --set=service.port,podAnnotations.second" {
+    if ! is_backend "vals"; then
+        skip
+    fi
+
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" \
+        --set=service.port=ref+echo://87,podAnnotations.second=value 2>&1
+
+    assert_output --partial "port: 87"
+    assert_output --partial "second: value"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets.yaml + wrapper --set=service.port,podAnnotations.second + escape" {
+    if on_windows || ! is_backend "vals"; then
+        skip
+    fi
+
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" \
+        --set=service.port=ref+echo://87,podAnnotations.second=va\\,lue 2>&1
+
+    assert_output --partial "port: 87"
+    assert_output --partial "second: va,lue"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets.yaml + wrapper --set=podAnnotations.second + !" {
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" \
+        --set=podAnnotations.second='va!ue' 2>&1
+
+    assert_output --partial "port: 81"
+    assert_output --partial "second: va!ue"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets.yaml + wrapper --set-string service.port" {
+    if ! is_backend "vals"; then
+        skip
+    fi
+
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" \
+        --set-string service.port=ref+echo://87 2>&1
+
+    assert_output --partial "port: 87"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets.yaml + wrapper --set-string=service.port" {
+    if ! is_backend "vals"; then
+        skip
+    fi
+
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" \
+        --set-string=service.port=ref+echo://87 2>&1
+
+    assert_output --partial "port: 87"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets.yaml + wrapper --set-string=service.port + quotes in value" {
+    if ! is_backend "vals"; then
+        skip
+    fi
+
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" \
+        --set-string='podAnnotations.quotes=ref+file://assets/values/vals/password.txt,service.port=ref+echo://87' 2>&1
+
+    assert_output --partial "port: 87"
+    assert_output --partial "quotes: 1234567!!\"§\$%&/(?=)(/&%\$§\"><;:_,;:_'''*'*\ndks"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets.yaml + wrapper --set-string=service.port + quotes in value + escape" {
+    if on_windows || ! is_backend "vals"; then
+        skip
+    fi
+
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" \
+        --set-string='podAnnotations.quotes=ref+file://assets/values/vals/password.txt,podAnnotations.escape=val\,ue,service.port=ref+echo://87' 2>&1
+
+    assert_output --partial "port: 87"
+    assert_output --partial "escape: val,ue"
+    assert_output --partial "quotes: 1234567!!\"§\$%&/(?=)(/&%\$§\"><;:_,;:_'''*'*\ndks"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + --set-file service.port=secrets+literal://" {
+    if ! is_backend "vals"; then
+        skip
+    fi
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" \
+        --set-file service.port=secrets+literal://ref+echo://87 2>&1
+
+    assert_output --partial "port: 87"
+    assert_success
+}
+
+@test "template: helm template w/ chart + --set-file=service.port=secrets+literal://" {
+    if ! is_backend "vals"; then
+        skip
+    fi
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" \
+        --set-file=service.port=secrets+literal://ref+echo://87 2>&1
+
+    assert_output --partial "port: 87"
+    assert_success
+}
+
+@test "template: helm template w/ chart + --set-file=service.port=secrets+literal://vals!" {
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" \
+        --set-file=service.port=secrets+literal://vals!ref+echo://87 2>&1
+
+    assert_output --partial "port: 87"
+    assert_success
+}
+
+@test "template: helm template w/ chart + --set-file=service.port=secrets+literal:// + quotes in value" {
+    if ! is_backend "vals"; then
+        skip
+    fi
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" \
+        --set-file='podAnnotations.quotes=secrets+literal://ref+file://assets/values/vals/password.txt,service.port=secrets+literal://ref+echo://88' 2>&1
+
+    assert_output --partial "port: 88"
+    assert_output --partial ":88'"
+    assert_output --partial "quotes: 1234567!!\"§\$%&/(?=)(/&%\$§\"><;:_,;:_'''*'*\ndks"
+    assert_success
+}
+
+@test "template: helm template w/ chart + secrets.yaml + --set-file service.port=secrets+literal:// w/ error" {
+    if ! is_backend "vals"; then
+        skip
+    fi
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" \
+        --set-file 'service.port=secrets+literal://ref+file://notexists' 2>&1
+
+    refute_output --partial "port: "
+    assert_failure
+}
+
+@test "template: helm template w/ chart + secrets://secrets.yaml + --set-file secrets://file.txt" {
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+    SET_FILE_PATH="$(dirname "${VALUES_PATH}")/files/file.txt"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" -f "secrets://${VALUES_PATH}" \
+        --set-file podAnnotations.fromFile="secrets://${SET_FILE_PATH}" 2>&1
+
+    assert_output --partial "port: 81"
+    assert_output --partial "hello=fromextrafile"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets://secrets.yaml + --set-file secrets://file.json" {
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+    SET_FILE_PATH="$(dirname "${VALUES_PATH}")/files/file.json"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" -f "secrets://${VALUES_PATH}" \
+        --set-file podAnnotations.fromFile="secrets://${SET_FILE_PATH}" 2>&1
+
+    assert_output --partial "port: 81"
+    assert_output -e 'hello\\?":.*\\?"fromextrafile'
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets://secrets.yaml + --set-file=secrets://file.yaml" {
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+    SET_FILE_PATH="$(dirname "${VALUES_PATH}")/files/file.yaml"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" -f "secrets://${VALUES_PATH}" \
+        --set-file=podAnnotations.fromFile="secrets://${SET_FILE_PATH}" 2>&1
+
+    assert_output --partial "port: 81"
+    assert_output --partial "hello: fromextrafile"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets://secrets.yaml + --set-file=secrets://file.properties" {
+    if ! is_backend "sops"; then
+        skip
+    fi
+
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+    SET_FILE_PATH="$(dirname "${VALUES_PATH}")/files/file.properties"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" -f "secrets://${VALUES_PATH}" \
+        --set-file podAnnotations.fromFile="secrets://${SET_FILE_PATH}" 2>&1
+
+    assert_output --partial "port: 81"
+    assert_output --partial "hello=fromextrafile"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets://secrets.yaml + --set-file=secrets://http://example.com/404.yaml" {
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+    SET_FILE_PATH="http://example.com/404.yaml"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" -f "secrets://${VALUES_PATH}" --set-file podAnnotations.fromFile="secrets://${SET_FILE_PATH}" 2>&1
+
+    assert_output --partial "[helm-secrets] Error while download url ${SET_FILE_PATH}"
+    assert_failure
+}
+
+@test "template: helm template w/ chart + wrapper + --set-file service.port=secrets+literal://" {
+    if ! is_backend "vals"; then
+        skip
+    fi
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" \
+        --set-file service.port=secrets+literal://ref+echo://87 2>&1
+
+    assert_output --partial "port: 87"
+    assert_success
+}
+
+@test "template: helm template w/ chart + wrapper + --set-file=service.port=secrets+literal://" {
+    if ! is_backend "vals"; then
+        skip
+    fi
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" \
+        --set-file=service.port=secrets+literal://ref+echo://87 2>&1
+
+    assert_output --partial "port: 87"
+    assert_success
+}
+
+@test "template: helm template w/ chart + wrapper + --set-file=service.port=secrets+literal://vals!" {
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" \
+        --set-file=service.port=secrets+literal://vals!ref+echo://87 2>&1
+
+    assert_output --partial "port: 87"
+    assert_success
+}
+
+@test "template: helm template w/ chart + wrapper + --set-file=service.port=secrets+literal:// + quotes in value" {
+    if ! is_backend "vals"; then
+        skip
+    fi
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" \
+        --set-file='podAnnotations.quotes=secrets+literal://ref+file://assets/values/vals/password.txt,service.port=secrets+literal://ref+echo://88' 2>&1
+
+    assert_output --partial "port: 88"
+    assert_output --partial ":88'"
+    assert_output --partial "quotes: 1234567!!\"§\$%&/(?=)(/&%\$§\"><;:_,;:_'''*'*\ndks"
+    assert_success
+}
+
+@test "template: helm template w/ chart + secrets.yaml + wrapper + --set-file service.port=secrets+literal:// w/ error" {
+    if ! is_backend "vals"; then
+        skip
+    fi
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" \
+        --set-file 'service.port=secrets+literal://ref+file://notexists' 2>&1
+
+    refute_output --partial "port: "
+    assert_failure
+}
+
+@test "template: helm template w/ chart + secrets://secrets.yaml + wrapper + --set-file secrets://file.txt" {
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+    SET_FILE_PATH="$(dirname "${VALUES_PATH}")/files/file.txt"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "secrets://${VALUES_PATH}" \
+        --set-file podAnnotations.fromFile="secrets://${SET_FILE_PATH}" 2>&1
+
+    assert_output --partial "port: 81"
+    assert_output --partial "hello=fromextrafile"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets://secrets.yaml + wrapper + --set-file secrets://file.json" {
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+    SET_FILE_PATH="$(dirname "${VALUES_PATH}")/files/file.json"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "secrets://${VALUES_PATH}" \
+        --set-file podAnnotations.fromFile="secrets://${SET_FILE_PATH}" 2>&1
+
+    assert_output --partial "port: 81"
+    assert_output -e 'hello\\?":.*\\?"fromextrafile'
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets://secrets.yaml + wrapper + --set-file=secrets://file.yaml" {
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+    SET_FILE_PATH="$(dirname "${VALUES_PATH}")/files/file.yaml"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "secrets://${VALUES_PATH}" \
+        --set-file=podAnnotations.fromFile="secrets://${SET_FILE_PATH}" 2>&1
+
+    assert_output --partial "port: 81"
+    assert_output --partial "hello: fromextrafile"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets://secrets.yaml + wrapper + --set-file=secrets://file.properties" {
+    if ! is_backend "sops"; then
+        skip
+    fi
+
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+    SET_FILE_PATH="$(dirname "${VALUES_PATH}")/files/file.properties"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "secrets://${VALUES_PATH}" \
+        --set-file podAnnotations.fromFile="secrets://${SET_FILE_PATH}" 2>&1
+
+    assert_output --partial "port: 81"
+    assert_output --partial "hello=fromextrafile"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets://secrets.yaml + wrapper + --set-file=secrets://http://example.com/404.yaml" {
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+    SET_FILE_PATH="http://example.com/404.yaml"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "secrets://${VALUES_PATH}" --set-file podAnnotations.fromFile="secrets://${SET_FILE_PATH}" 2>&1
+
+    assert_output --partial "[helm-secrets] Error while download url ${SET_FILE_PATH}"
+    assert_failure
+}
+
+@test "template: helm template w/ chart + secrets.yaml + --set-file file.txt" {
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+    SET_FILE_PATH="$(dirname "${VALUES_PATH}")/files/file.txt"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" --set-file podAnnotations.fromFile="${SET_FILE_PATH}" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
+    assert_output --partial "port: 81"
+    assert_output --partial "hello=fromextrafile"
+    assert_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets.yaml + --set-file file.json" {
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+    SET_FILE_PATH="$(dirname "${VALUES_PATH}")/files/file.json"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" --set-file podAnnotations.fromFile="${SET_FILE_PATH}" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
+    assert_output --partial "port: 81"
+    assert_output -e 'hello\\?":.*\\?"fromextrafile'
+    assert_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets.yaml + --set-file=file.yaml" {
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+    SET_FILE_PATH="$(dirname "${VALUES_PATH}")/files/file.yaml"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" --set-file=podAnnotations.fromFile="${SET_FILE_PATH}" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
+    assert_output --partial "port: 81"
+    assert_output --partial "hello: fromextrafile"
+    assert_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets.yaml + --set-file=file.properties" {
+    if ! is_backend "sops"; then
+        skip
+    fi
+
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+    SET_FILE_PATH="$(dirname "${VALUES_PATH}")/files/file.properties"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" --set-file podAnnotations.fromFile="${SET_FILE_PATH}" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
+    assert_output --partial "port: 81"
+    assert_output --partial "hello=fromextrafile"
+    assert_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets.yaml + --set-file=http://example.com/404.yaml" {
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+    SET_FILE_PATH="http://example.com/404.yaml"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" \
+        -f "${VALUES_PATH}" --set-file podAnnotations.fromFile="${SET_FILE_PATH}" 2>&1
+
+    assert_output --partial "[helm-secrets] File does not exist: ${SET_FILE_PATH}"
+    assert_failure
+}
+
+@test "template: helm template w/ chart + secrets.yaml + --set-file=http://example.com/404.yaml + HELM_SECRETS_IGNORE_MISSING_VALUES" {
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+    SET_FILE_PATH="http://example.com/404.yaml"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run env HELM_SECRETS_IGNORE_MISSING_VALUES=true WSLENV="HELM_SECRETS_IGNORE_MISSING_VALUES:${WSLENV}" \
+        "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" \
+        -f "${VALUES_PATH}" --set-file podAnnotations.fromFile="${SET_FILE_PATH}" 2>&1
+
+    assert_output --partial 'fromFile: ""'
+    assert_success
+}
+
+@test "template: helm template w/ chart + secrets.yaml + --set-file=http://example.com/404.yaml + ignore errors" {
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+    SET_FILE_PATH="?http://example.com/404.yaml"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" \
+        -f "${VALUES_PATH}" --set-file podAnnotations.fromFile="${SET_FILE_PATH}" 2>&1
+
+    assert_output --partial 'fromFile: ""'
+    assert_success
 }
 
 @test "template: helm template w/ chart + secrets.yaml + http://" {
-    if ! is_driver "sops"; then
-        # For vault its pretty hard to have a committed files with temporary seed of this test run
-        skip
-    fi
-    FILE="https://raw.githubusercontent.com/jkroepke/helm-secrets/main/tests/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    VALUES="https://raw.githubusercontent.com/jkroepke/helm-secrets/main/tests/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
-    assert_success
-    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
     assert_output --partial "port: 81"
     assert_output --partial "[helm-secrets] Removed: "
+    assert_success
 }
 
 @test "template: helm template w/ chart + secrets.yaml + http://example.com/404.yaml" {
-    if ! is_driver "sops"; then
-        # For vault its pretty hard to have a committed files with temporary seed of this test run
-        skip
-    fi
-    FILE="http://example.com/404.yaml"
+    VALUES="http://example.com/404.yaml"
+    VALUES_PATH="${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
+    assert_output --partial "[helm-secrets] File does not exist: ${VALUES}"
     assert_failure
-    assert_output --partial "[helm-secrets] File does not exist: ${FILE}"
 }
 
 @test "template: helm template w/ chart + secrets.yaml + git://" {
-    if on_windows || ! is_driver "sops"; then
-        # For vault its pretty hard to have a committed files with temporary seed of this test run
+    if on_windows; then
         skip
     fi
 
-    FILE="git+https://github.com/jkroepke/helm-secrets@tests/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml?ref=main"
+    VALUES="git+https://github.com/jkroepke/helm-secrets@tests/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml?ref=main"
+    VALUES_PATH="${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
-    assert_success
-    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
+    assert_output --partial "[helm-secrets] Decrypt: ${VALUES}"
     assert_output --partial "port: 81"
     assert_output --partial "[helm-secrets] Removed: "
+    assert_success
 }
 
-
-@test "template: helm template w/ chart + secrets.yaml + sops://" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+@test "template: helm template w/ chart + not-exists.yaml + secrets://" {
+    VALUES="not-exists.yaml"
+    VALUES_PATH="${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" template "${TEST_TEMP_DIR}/chart" -f "sops://${FILE}" 2>&1
-    assert_success
-    assert_output --partial "port: 81"
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" \
+        -f "secrets://${VALUES_PATH}" 2>&1
+
+    assert_output --partial "[helm-secrets] File does not exist: ${VALUES_PATH}"
+    assert_failure
 }
 
-@test "template: helm template w/ chart + secrets.yaml + secret://" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+@test "template: helm template w/ chart + not-exists.yaml + secrets:// + HELM_SECRETS_IGNORE_MISSING_VALUES=false" {
+    VALUES="not-exists.yaml"
+    VALUES_PATH="${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" template "${TEST_TEMP_DIR}/chart" -f "secret://${FILE}" 2>&1
-    assert_success
-    assert_output --partial "port: 81"
+    run env HELM_SECRETS_IGNORE_MISSING_VALUES=false WSLENV="HELM_SECRETS_IGNORE_MISSING_VALUES:${WSLENV}" \
+        "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" \
+        -f "secrets://${VALUES_PATH}" 2>&1
+
+    assert_output --partial "[helm-secrets] File does not exist: ${VALUES_PATH}"
+    assert_failure
 }
 
-@test "template: helm template w/ chart + secrets.yaml + secrets://" {
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+@test "template: helm template w/ chart + not-exists.yaml + secrets:// + HELM_SECRETS_IGNORE_MISSING_VALUES=true" {
+    VALUES="not-exists.yaml"
+    VALUES_PATH="${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" template "${TEST_TEMP_DIR}/chart" -f "secrets://${FILE}" 2>&1
+    run env HELM_SECRETS_IGNORE_MISSING_VALUES=true WSLENV="HELM_SECRETS_IGNORE_MISSING_VALUES:${WSLENV}" \
+        "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" \
+        -f "secrets://${VALUES_PATH}" 2>&1
+
+    assert_output --partial "port: 80"
     assert_success
-    assert_output --partial "port: 81"
+}
+
+@test "template: helm template w/ chart + not-exists.yaml + secrets:// + ignore errors" {
+    VALUES="not-exists.yaml"
+    VALUES_PATH="?${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run env HELM_SECRETS_IGNORE_MISSING_VALUES=true WSLENV="HELM_SECRETS_IGNORE_MISSING_VALUES:${WSLENV}" \
+        "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" \
+        -f "secrets://${VALUES_PATH}" 2>&1
+
+    assert_output --partial "port: 80"
+    assert_success
 }
 
 @test "template: helm template w/ chart + secrets.yaml + secrets://http://" {
-    if ! is_driver "sops"; then
-        # For vault its pretty hard to have a committed files with temporary seed of this test run
-        skip
-    fi
-    FILE="secrets://https://raw.githubusercontent.com/jkroepke/helm-secrets/main/tests/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    VALUES="secrets://https://raw.githubusercontent.com/jkroepke/helm-secrets/main/tests/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
-    assert_success
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" -f "${VALUES_PATH}" 2>&1
+
     assert_output --partial "port: 81"
+    assert_success
 }
 
 @test "template: helm template w/ chart + secrets.yaml + secrets://http:// + HELM_SECRETS_URL_VARIABLE_EXPANSION=true" {
-    if on_windows || ! is_driver "sops"; then
-        # For vault its pretty hard to have a committed files with temporary seed of this test run
+    if on_windows; then
         skip
     fi
-    FILE="secrets://https://raw.githubusercontent.com/\${GH_OWNER}/\${GH_REPO}/main/tests/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+
+    VALUES="secrets://https://raw.githubusercontent.com/\${GH_OWNER}/\${GH_REPO}/main/tests/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
     # shellcheck disable=SC2030 disable=SC2031
-    export WSLENV="HELM_SECRETS_URL_VARIABLE_EXPANSION:GH_OWNER:GH_REPO:${WSLENV}"
+    WSLENV="HELM_SECRETS_URL_VARIABLE_EXPANSION:GH_OWNER:GH_REPO:${WSLENV:-}"
 
-    run env HELM_SECRETS_URL_VARIABLE_EXPANSION=true GH_OWNER=jkroepke GH_REPO=helm-secrets "${HELM_BIN}" template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
-    assert_success
+    run env WSLENV="${WSLENV}" HELM_SECRETS_URL_VARIABLE_EXPANSION=true GH_OWNER=jkroepke GH_REPO=helm-secrets \
+        "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" -f "${VALUES_PATH}" 2>&1
+
     assert_output --partial "port: 81"
+    assert_success
 }
 
 @test "template: helm template w/ chart + secrets.yaml + secrets://http:// + HELM_SECRETS_URL_VARIABLE_EXPANSION=false" {
-    if ! is_driver "sops"; then
-        # For vault its pretty hard to have a committed files with temporary seed of this test run
-        skip
-    fi
-    FILE="secrets://https://raw.githubusercontent.com/\${GH_OWNER}/\${GH_REPO}/main/tests/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    VALUES="secrets://https://raw.githubusercontent.com/\${GH_OWNER}/\${GH_REPO}/main/tests/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
     # shellcheck disable=SC2030 disable=SC2031
-    export WSLENV="HELM_SECRETS_URL_VARIABLE_EXPANSION:GH_OWNER:GH_REPO:${WSLENV}"
+    WSLENV="HELM_SECRETS_URL_VARIABLE_EXPANSION:GH_OWNER:GH_REPO:${WSLENV:-}"
 
-    run env HELM_SECRETS_URL_VARIABLE_EXPANSION=false "${HELM_BIN}" template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
+    run env WSLENV="${WSLENV}" HELM_SECRETS_URL_VARIABLE_EXPANSION=false \
+        "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" -f "${VALUES_PATH}" 2>&1
+
     assert_failure
 }
 
 @test "template: helm template w/ chart + secrets.yaml + secrets://http://example.com/404.yaml" {
-    if ! is_driver "sops"; then
-        # For vault its pretty hard to have a committed files with temporary seed of this test run
-        skip
-    fi
-    FILE="secrets://http://example.com/404.yaml"
+    VALUES="secrets://http://example.com/404.yaml"
+    VALUES_PATH="${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" -f "${VALUES_PATH}" 2>&1
+    assert_failure
+}
+
+@test "template: helm template w/ chart + secrets.yaml + secrets://http://example.com/404.yaml + HELM_SECRETS_URL_VARIABLE_EXPANSION=true" {
+    VALUES="secrets://http://example.com/404.yaml"
+    VALUES_PATH="${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run env HELM_SECRETS_URL_VARIABLE_EXPANSION=true "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" \
+        -f "${VALUES_PATH}" 2>&1
+
     assert_failure
 }
 
 @test "template: helm template w/ chart + secrets.yaml + secrets://git://" {
-    if on_windows || ! is_driver "sops"; then
-        # For vault its pretty hard to have a committed files with temporary seed of this test run
+    if on_windows; then
         skip
     fi
 
-    FILE="secrets://git+https://github.com/jkroepke/helm-secrets@tests/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml?ref=main"
+    VALUES="secrets://git+https://github.com/jkroepke/helm-secrets@tests/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml?ref=main"
+    VALUES_PATH="${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
-    assert_success
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" -f "${VALUES_PATH}" 2>&1
+
     assert_output --partial "port: 81"
+    assert_success
 }
 
 @test "template: helm template w/ chart + secrets.gpg_key.yaml + secrets+gpg-import://" {
-    if on_windows || ! is_driver "sops"; then
+    if on_windows || ! is_backend "sops"; then
         skip
     fi
 
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.gpg_key.yaml"
+    VALUES="secrets+gpg-import://${TEST_TEMP_DIR}/assets/gpg/private2.gpg?${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/secrets.gpg_key.yaml"
+    VALUES_PATH="${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" template "${TEST_TEMP_DIR}/chart" -f "secrets+gpg-import://${TEST_TEMP_DIR}/assets/gpg/private2.gpg?${FILE}" 2>&1
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" -f "${VALUES_PATH}" 2>&1
     assert_success
     assert_output --partial "port: 91"
 }
 
-@test "template: helm template w/ chart + secrets.gpg_key.yaml + wrapper + secrets+gpg-import://" {
-    if ! on_linux || on_wsl || ! is_driver "sops"; then
+@test "template: helm template w/ chart + secrets.gpg_key.yaml + secrets+gpg-import://sops!" {
+    if on_windows; then
         skip
     fi
 
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.gpg_key.yaml"
-    HELM_SECRETS_HELM_PATH="$(command -v "${HELM_BIN}")"
+    VALUES="secrets+gpg-import://sops!${TEST_TEMP_DIR}/assets/gpg/private2.gpg?${TEST_TEMP_DIR}/assets/values/sops/secrets.gpg_key.yaml"
+    VALUES_PATH="${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
-    printf '#!/usr/bin/env sh\nexec %s secrets "$@"' "${HELM_SECRETS_HELM_PATH}" > "${TEST_TEMP_DIR}/helm"
-    chmod +x "${TEST_TEMP_DIR}/helm"
 
-    run env HELM_SECRETS_HELM_PATH="${HELM_SECRETS_HELM_PATH}" PATH="${TEST_TEMP_DIR}:${PATH}" "${TEST_TEMP_DIR}/helm" template "${TEST_TEMP_DIR}/chart" -f "secrets+gpg-import://${TEST_TEMP_DIR}/assets/gpg/private2.gpg?${FILE}" 2>&1
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" -f "${VALUES_PATH}" 2>&1
     assert_success
     assert_output --partial "port: 91"
 }
 
-@test "template: helm template w/ chart + secrets.gpg_key.yaml + secrets+gpg-import://git://" {
-    if on_windows || ! is_driver "sops"; then
+@test "template: helm template w/ chart + secrets.gpg_key.yaml + secrets+gpg-import:// + ignore errors" {
+    if on_windows || ! is_backend "sops"; then
         skip
     fi
 
-    FILE="secrets://git+https://github.com/jkroepke/helm-secrets@tests/assets/values/${HELM_SECRETS_DRIVER}/secrets.gpg_key.yaml?ref=main"
+    VALUES="secrets+gpg-import://?${TEST_TEMP_DIR}/assets/gpg/private2.gpg?${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/not-found.gpg_key.yaml"
+    VALUES_PATH="${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" template "${TEST_TEMP_DIR}/chart" -f "secrets+gpg-import://${TEST_TEMP_DIR}/assets/gpg/private2.gpg?${FILE}" 2>&1
-    assert_success
-    assert_output --partial "port: 91"
-}
-
-@test "template: helm template w/ chart + secrets.gpg_key.yaml + secrets+gpg-import:// + HELM_SECRETS_ALLOW_GPG_IMPORT" {
-    if on_windows ||  ! is_driver "sops"; then
-        skip
-    fi
-
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.gpg_key.yaml"
-
-    create_chart "${TEST_TEMP_DIR}"
-
-    run env HELM_SECRETS_ALLOW_GPG_IMPORT=false "${HELM_BIN}" template "${TEST_TEMP_DIR}/chart" -f "secrets+gpg-import://${TEST_TEMP_DIR}/assets/gpg/private2.gpg?${FILE}" 2>&1
-    assert_failure
-    assert_output --partial "[helm-secrets] secrets+gpg-import:// is not allowed in this context!"
-}
-
-@test "template: helm template w/ chart + secrets.age.yaml + secrets+age-import://" {
-    if on_windows || ! is_driver "sops"; then
-        skip
-    fi
-
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.age.yaml"
-
-    create_chart "${TEST_TEMP_DIR}"
-
-    run "${HELM_BIN}" template "${TEST_TEMP_DIR}/chart" -f "secrets+age-import://${TEST_TEMP_DIR}/assets/age/key.txt?${FILE}" 2>&1
-    assert_success
-    assert_output --partial "port: 92"
-
-    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "secrets+age-import://${TEST_TEMP_DIR}/assets/age/key.txt?${FILE}" 2>&1
-    assert_success
-    assert_output --partial "port: 92"
-}
-
-@test "template: helm template w/ chart + secrets.age.yaml + secrets+age-import://git://" {
-    if on_windows || ! is_driver "sops"; then
-        skip
-    fi
-
-    FILE="secrets://git+https://github.com/jkroepke/helm-secrets@tests/assets/values/${HELM_SECRETS_DRIVER}/secrets.age.yaml?ref=main"
-
-    create_chart "${TEST_TEMP_DIR}"
-
-    run "${HELM_BIN}" template "${TEST_TEMP_DIR}/chart" -f "secrets+age-import://${TEST_TEMP_DIR}/assets/age/key.txt?${FILE}" 2>&1
-    assert_success
-    assert_output --partial "port: 92"
-
-    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "secrets+age-import://${TEST_TEMP_DIR}/assets/age/key.txt?${FILE}" 2>&1
-    assert_success
-    assert_output --partial "port: 92"
-}
-
-@test "template: helm template w/ chart + secrets.age.yaml + secrets+age-import:// + HELM_SECRETS_ALLOW_AGE_IMPORT" {
-    if on_windows || ! is_driver "sops"; then
-        skip
-    fi
-
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.age.yaml"
-
-    create_chart "${TEST_TEMP_DIR}"
-
-    run env HELM_SECRETS_ALLOW_AGE_IMPORT=false "${HELM_BIN}" template "${TEST_TEMP_DIR}/chart" -f "secrets+age-import://${TEST_TEMP_DIR}/assets/age/key.txt?${FILE}" 2>&1
-    assert_failure
-    assert_output --partial "[helm-secrets] secrets+age-import:// is not allowed in this context!"
-}
-
-@test "template: helm template w/ chart + --driver-args (simple)" {
-    if ! is_driver "sops"; then
-        skip
-    fi
-
-    create_chart "${TEST_TEMP_DIR}"
-
-    run "${HELM_BIN}" secrets --driver-args "--verbose" template "${TEST_TEMP_DIR}/chart" 2>&1
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" -f "${VALUES_PATH}" 2>&1
     assert_success
     assert_output --partial "port: 80"
 }
 
-@test "template: helm template w/ chart + some-secrets.yaml + --driver-args (simple)" {
-    if ! is_driver "sops"; then
+@test "template: helm template w/ chart + secrets.gpg_key.yaml + wrapper + secrets+gpg-import://" {
+    if on_windows || on_wsl || ! is_backend "sops"; then
         skip
     fi
 
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/some-secrets.yaml"
+    VALUES="secrets+gpg-import://${TEST_TEMP_DIR}/assets/gpg/private2.gpg?${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/secrets.gpg_key.yaml"
+    VALUES_PATH="${VALUES}"
+    HELM_SECRETS_HELM_PATH="$(command -v "${HELM_BIN}")"
+
+    create_chart "${TEST_TEMP_DIR}"
+    cp "${GIT_ROOT}/scripts/wrapper/helm.sh" "${TEST_TEMP_DIR}/helm"
+    chmod +x "${TEST_TEMP_DIR}/helm"
+
+    run env -u TMPDIR HELM_SECRETS_HELM_PATH="${HELM_SECRETS_HELM_PATH}" HELM_SECRETS_WRAPPER_ENABLED=true PATH="${TEST_TEMP_DIR}:${PATH}" \
+        "${TEST_TEMP_DIR}/helm" template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
+    assert_output --partial "port: 91"
+    assert_success
+}
+
+@test "template: helm template w/ chart + secrets.gpg_key.yaml + wrapper + HELM_SECRETS_LOAD_GPG_KEYS=/private2.gpg" {
+    if on_windows || on_wsl || ! is_backend "sops"; then
+        skip
+    fi
+
+    VALUES="secrets://${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/secrets.gpg_key.yaml"
+    VALUES_PATH="${VALUES}"
+    HELM_SECRETS_HELM_PATH="$(command -v "${HELM_BIN}")"
+
+    create_chart "${TEST_TEMP_DIR}"
+    cp "${GIT_ROOT}/scripts/wrapper/helm.sh" "${TEST_TEMP_DIR}/helm"
+    chmod +x "${TEST_TEMP_DIR}/helm"
+
+    run env -u TMPDIR HELM_SECRETS_HELM_PATH="${HELM_SECRETS_HELM_PATH}" PATH="${TEST_TEMP_DIR}:${PATH}" HELM_SECRETS_WRAPPER_ENABLED=true HELM_SECRETS_LOAD_GPG_KEYS="${TEST_TEMP_DIR}/assets/gpg/private2.gpg" \
+        "${TEST_TEMP_DIR}/helm" template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
+    assert_output --partial "port: 91"
+    assert_success
+
+    run env GNUPGHOME="${HOME}/.helm-secrets" gpgconf --kill gpg-agent
+}
+
+@test "template: helm template w/ chart + secrets.gpg_key.yaml + wrapper + HELM_SECRETS_LOAD_GPG_KEYS=/" {
+    if on_windows || on_wsl || ! is_backend "sops"; then
+        skip
+    fi
+
+    VALUES="secrets://${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_BACKEND}/secrets.gpg_key.yaml"
+    VALUES_PATH="${VALUES}"
+    HELM_SECRETS_HELM_PATH="$(command -v "${HELM_BIN}")"
+
+    create_chart "${TEST_TEMP_DIR}"
+    cp "${GIT_ROOT}/scripts/wrapper/helm.sh" "${TEST_TEMP_DIR}/helm"
+    chmod +x "${TEST_TEMP_DIR}/helm"
+
+    run env -u TMPDIR GNUPGHOME="${HOME}/${BATS_TEST_NUMBER}" HELM_SECRETS_HELM_PATH="${HELM_SECRETS_HELM_PATH}" PATH="${TEST_TEMP_DIR}:${PATH}" HELM_SECRETS_WRAPPER_ENABLED=true HELM_SECRETS_LOAD_GPG_KEYS="${TEST_TEMP_DIR}/assets/gpg/" \
+        "${TEST_TEMP_DIR}/helm" template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
+    assert_output --partial "port: 91"
+    assert_success
+
+    run env GNUPGHOME="${HOME}/${BATS_TEST_NUMBER}" gpgconf --kill gpg-agent
+}
+
+@test "template: helm template w/ chart + secrets.age.yaml + secrets+gpg-import:// + without key file" {
+    if on_windows || ! is_backend "sops"; then
+        skip
+    fi
+
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/not-found.age.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" secrets --driver-args "--verbose" template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" -f "secrets+gpg-import://${VALUES_PATH}" 2>&1
+
+    assert_output --partial "Invalid syntax: secrets+gpg-import://[path to key]?[path secrets.yaml]"
+    assert_failure
+}
+
+@test "template: helm template w/ chart + secrets.gpg_key.yaml + secrets+gpg-import://git://" {
+    if on_windows || ! is_backend "sops"; then
+        skip
+    fi
+
+    VALUES="git+https://github.com/jkroepke/helm-secrets@tests/assets/values/${HELM_SECRETS_BACKEND}/secrets.gpg_key.yaml?ref=main"
+    VALUES_PATH="${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" -f "secrets+gpg-import://${TEST_TEMP_DIR}/assets/gpg/private2.gpg?${VALUES_PATH}" 2>&1
+
+    assert_output --partial "port: 91"
     assert_success
+}
+
+@test "template: helm template w/ chart + secrets.gpg_key.yaml + secrets+gpg-import:// + HELM_SECRETS_ALLOW_GPG_IMPORT" {
+    if on_windows || ! is_backend "sops"; then
+        skip
+    fi
+
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.gpg_key.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run env HELM_SECRETS_ALLOW_GPG_IMPORT=false "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" -f "secrets+gpg-import://${TEST_TEMP_DIR}/assets/gpg/private2.gpg?${VALUES_PATH}" 2>&1
+
+    assert_output --partial "[helm-secrets] secrets+gpg-import:// is not allowed in this context!"
+    assert_failure
+}
+
+@test "template: helm template w/ chart + secrets.age.yaml + secrets+age-import://" {
+    if on_windows || ! is_backend "sops"; then
+        skip
+    fi
+
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.age.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" -f "secrets+age-import://${TEST_TEMP_DIR}/assets/age/key.txt?${VALUES_PATH}" 2>&1
+
+    assert_output --partial "port: 92"
+    assert_success
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "secrets+age-import://${TEST_TEMP_DIR}/assets/age/key.txt?${VALUES_PATH}" 2>&1
+
+    assert_output --partial "port: 92"
+    assert_success
+}
+
+@test "template: helm template w/ chart + secrets.age.yaml + secrets+age-import:// + ignore errors" {
+    if on_windows || ! is_backend "sops"; then
+        skip
+    fi
+
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/not-found.age.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" -f "secrets+age-import://?${TEST_TEMP_DIR}/assets/age/key.txt?${VALUES_PATH}" 2>&1
+
+    assert_output --partial "port: 80"
+    assert_success
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "secrets+age-import://?${TEST_TEMP_DIR}/assets/age/key.txt?${VALUES_PATH}" 2>&1
+
+    assert_output --partial "port: 80"
+    assert_success
+}
+
+@test "template: helm template w/ chart + secrets.age.yaml + secrets+age-import:// + without key file" {
+    if on_windows || ! is_backend "sops"; then
+        skip
+    fi
+
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/not-found.age.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" -f "secrets+age-import://${VALUES_PATH}" 2>&1
+
+    assert_output --partial "Invalid syntax: secrets+age-import://[path to key]?[path secrets.yaml]"
+    assert_failure
+}
+
+@test "template: helm template w/ chart + secrets.age.yaml + secrets+age-import://git://" {
+    if on_windows || ! is_backend "sops"; then
+        skip
+    fi
+
+    VALUES="git+https://github.com/jkroepke/helm-secrets@tests/assets/values/${HELM_SECRETS_BACKEND}/secrets.age.yaml?ref=main"
+    VALUES_PATH="${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" -f "secrets+age-import://${TEST_TEMP_DIR}/assets/age/key.txt?${VALUES_PATH}" 2>&1
+
+    assert_output --partial "port: 92"
+    assert_success
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "secrets+age-import://${TEST_TEMP_DIR}/assets/age/key.txt?${VALUES_PATH}" 2>&1
+
+    assert_output --partial "port: 92"
+    assert_success
+}
+
+@test "template: helm template w/ chart + secrets.age.yaml + secrets+age-import:// + HELM_SECRETS_ALLOW_AGE_IMPORT" {
+    if on_windows || ! is_backend "sops"; then
+        skip
+    fi
+
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.age.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run env HELM_SECRETS_ALLOW_AGE_IMPORT=false "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" -f "secrets+age-import://${TEST_TEMP_DIR}/assets/age/key.txt?${VALUES_PATH}" 2>&1
+
+    assert_output --partial "[helm-secrets] secrets+age-import:// is not allowed in this context!"
+    assert_failure
+}
+
+@test "template: helm template w/ chart + --backend-args (simple)" {
+    if ! is_backend "sops"; then
+        skip
+    fi
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets --backend-args "--verbose" template "${TEST_TEMP_DIR}/chart" 2>&1
+
+    assert_output --partial "port: 80"
+    assert_success
+}
+
+@test "template: helm template w/ chart + some-secrets.yaml + --backend-args (simple)" {
+    if ! is_backend "sops"; then
+        skip
+    fi
+
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/some-secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets --backend-args "--verbose" template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
     assert_output --partial "Data key recovered successfully"
-    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
     assert_output --partial "port: 83"
-    assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert_file_not_exist "${FILE}.dec"
+    assert_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
 }
 
 @test "template: helm template w/ chart + some-secrets.yaml + -a (simple)" {
-    if ! is_driver "sops"; then
+    if ! is_backend "sops"; then
         skip
     fi
 
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/some-secrets.yaml"
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/some-secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" secrets -a "--verbose" template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
-    assert_success
+    run "${HELM_BIN}" secrets -a "--verbose" template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
     assert_output --partial "Data key recovered successfully"
-    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
     assert_output --partial "port: 83"
-    assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert_file_not_exist "${FILE}.dec"
+    assert_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
 }
 
-@test "template: helm template w/ chart + some-secrets.yaml + HELM_SECRETS_DRIVER_ARGS (simple)" {
-    if ! is_driver "sops"; then
+@test "template: helm template w/ chart + some-secrets.yaml + HELM_SECRETS_BACKEND_ARGS (simple)" {
+    if ! is_backend "sops"; then
         skip
     fi
 
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/some-secrets.yaml"
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/some-secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    HELM_SECRETS_DRIVER_ARGS=--verbose
-    export HELM_SECRETS_DRIVER_ARGS
+    HELM_SECRETS_BACKEND_ARGS=--verbose
 
     # shellcheck disable=SC2031 disable=SC2030
-    export WSLENV="HELM_SECRETS_DRIVER_ARGS:${WSLENV}"
+    WSLENV="HELM_SECRETS_BACKEND_ARGS:${WSLENV:-}"
 
-    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
-    assert_success
+    run env WSLENV="${WSLENV}" HELM_SECRETS_BACKEND_ARGS="${HELM_SECRETS_BACKEND_ARGS}" \
+        "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
     assert_output --partial "Data key recovered successfully"
-    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
     assert_output --partial "port: 83"
-    assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert_file_not_exist "${FILE}.dec"
+    assert_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
 }
 
-@test "template: helm template w/ chart + some-secrets.yaml + --driver-args (complex)" {
-    if on_wsl || ! is_driver "sops"; then
+@test "template: helm template w/ chart + some-secrets.yaml + --backend-args (complex)" {
+    if ! is_backend "sops"; then
         skip
     fi
 
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/some-secrets.yaml"
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/some-secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" secrets --driver-args "--verbose --output-type \"yaml\"" template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
-    assert_success
+    run "${HELM_BIN}" secrets --backend-args "--verbose --output-type \"yaml\"" template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
     assert_output --partial "Data key recovered successfully"
-    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
     assert_output --partial "port: 83"
-    assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert_file_not_exist "${FILE}.dec"
+    assert_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
 }
 
 @test "template: helm template w/ chart + some-secrets.yaml + -a (complex)" {
-    if on_wsl || ! is_driver "sops"; then
+    if ! is_backend "sops"; then
         skip
     fi
 
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/some-secrets.yaml"
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/some-secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run "${HELM_BIN}" secrets -a "--verbose --output-type \"yaml\"" template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
-    assert_success
+    run "${HELM_BIN}" secrets -a "--verbose --output-type \"yaml\"" template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
     assert_output --partial "Data key recovered successfully"
-    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
     assert_output --partial "port: 83"
-    assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert_file_not_exist "${FILE}.dec"
+    assert_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
 }
 
-@test "template: helm template w/ chart + some-secrets.yaml + HELM_SECRETS_DRIVER_ARGS (complex)" {
-    if ! is_driver "sops"; then
+@test "template: helm template w/ chart + some-secrets.yaml + HELM_SECRETS_BACKEND_ARGS (complex)" {
+    if ! is_backend "sops"; then
         skip
     fi
 
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/some-secrets.yaml"
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/some-secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    # shellcheck disable=SC2089
-    HELM_SECRETS_DRIVER_ARGS="--verbose --output-type \"yaml\""
-    # shellcheck disable=SC2090
-    export HELM_SECRETS_DRIVER_ARGS
-    # shellcheck disable=SC2031
-    export WSLENV="HELM_SECRETS_DRIVER_ARGS:${WSLENV}"
+    HELM_SECRETS_BACKEND_ARGS="--verbose --output-type \"yaml\""
+    # shellcheck disable=SC2030 disable=SC2031
+    WSLENV="HELM_SECRETS_BACKEND_ARGS:${WSLENV:-}"
 
-    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
-    assert_success
+    run env WSLENV="${WSLENV}" HELM_SECRETS_BACKEND_ARGS="${HELM_SECRETS_BACKEND_ARGS}" \
+        "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
     assert_output --partial "Data key recovered successfully"
-    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
     assert_output --partial "port: 83"
-    assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert_file_not_exist "${FILE}.dec"
+    assert_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
 }
 
 @test "template: helm template w/ chart + secrets.yaml + HELM_SECRETS_VALUES_ALLOW_SYMLINKS=false" {
-    if on_windows || ! is_driver "sops"; then
+    if on_windows || ! is_backend "sops"; then
         skip
     fi
 
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.symlink.yaml"
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.symlink.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run env HELM_SECRETS_VALUES_ALLOW_SYMLINKS=false "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
+    run env HELM_SECRETS_VALUES_ALLOW_SYMLINKS=false "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
+    assert_output --partial "[helm-secrets] Values file '${VALUES_PATH}' is a symlink. Symlinks are not allowed."
     assert_failure
-    assert_output --partial "[helm-secrets] Values file '${FILE}' is a symlink. Symlinks are not allowed."
-    assert_file_not_exist "${FILE}.dec"
+    assert_file_not_exists "${VALUES_PATH}.dec"
 }
 
 @test "template: helm template w/ chart + secrets.yaml + HELM_SECRETS_VALUES_ALLOW_SYMLINKS=true" {
-    if on_windows || ! is_driver "sops"; then
+    if on_windows || ! is_backend "sops"; then
         skip
     fi
 
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.symlink.yaml"
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.symlink.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run env HELM_SECRETS_VALUES_ALLOW_SYMLINKS=true "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
-    assert_success
-    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    run env HELM_SECRETS_VALUES_ALLOW_SYMLINKS=true "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
     assert_output --partial "port: 81"
-    assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert_file_not_exist "${FILE}.dec"
+    assert_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
 }
 
 @test "template: helm template w/ chart + secrets.yaml + HELM_SECRETS_VALUES_ALLOW_ABSOLUTE_PATH=false" {
-    if on_windows || ! is_driver "sops"; then
+    if on_windows || ! is_backend "sops"; then
         skip
     fi
 
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run env HELM_SECRETS_VALUES_ALLOW_ABSOLUTE_PATH=false "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
+    run env HELM_SECRETS_VALUES_ALLOW_ABSOLUTE_PATH=false "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
+    assert_output --partial "[helm-secrets] Values filepath '${VALUES_PATH}' is an absolute path. Absolute paths are not allowed."
     assert_failure
-    assert_output --partial "[helm-secrets] Values filepath '${FILE}' is an absolute path. Absolute paths are not allowed."
-    assert_file_not_exist "${FILE}.dec"
+    assert_file_not_exists "${VALUES_PATH}.dec"
 }
 
 @test "template: helm template w/ chart + secrets.yaml + HELM_SECRETS_VALUES_ALLOW_ABSOLUTE_PATH=true" {
-    if on_windows || ! is_driver "sops"; then
+    if on_windows || ! is_backend "sops"; then
         skip
     fi
 
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run env HELM_SECRETS_VALUES_ALLOW_ABSOLUTE_PATH=true "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
-    assert_success
-    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    run env HELM_SECRETS_VALUES_ALLOW_ABSOLUTE_PATH=true "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
     assert_output --partial "port: 81"
-    assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert_file_not_exist "${FILE}.dec"
+    assert_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
 }
 
 @test "template: helm template w/ chart + secrets.yaml + HELM_SECRETS_VALUES_ALLOW_PATH_TRAVERSAL=false" {
-    if on_windows || ! is_driver "sops"; then
+    if on_windows || ! is_backend "sops"; then
         skip
     fi
 
-    FILE="${TEST_TEMP_DIR}/assets/values/../values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    VALUES="assets/values/../values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run env HELM_SECRETS_VALUES_ALLOW_PATH_TRAVERSAL=false "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
+    run env HELM_SECRETS_VALUES_ALLOW_PATH_TRAVERSAL=false "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
+    assert_output --partial "[helm-secrets] Values filepath '${VALUES_PATH}' contains '..'. Path traversal is not allowed."
     assert_failure
-    assert_output --partial "[helm-secrets] Values filepath '${FILE}' contains '..'. Path traversal is not allowed."
-    assert_file_not_exist "${FILE}.dec"
+    assert_file_not_exists "${VALUES_PATH}.dec"
 }
 
 @test "template: helm template w/ chart + secrets.yaml + HELM_SECRETS_VALUES_ALLOW_PATH_TRAVERSAL=true" {
-    if on_windows || ! is_driver "sops"; then
+    if on_windows || ! is_backend "sops"; then
         skip
     fi
 
-    FILE="${TEST_TEMP_DIR}/assets/values/${HELM_SECRETS_DRIVER}/secrets.yaml"
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
 
     create_chart "${TEST_TEMP_DIR}"
 
-    run env HELM_SECRETS_VALUES_ALLOW_PATH_TRAVERSAL=true "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${FILE}" 2>&1
-    assert_success
-    assert_output --partial "[helm-secrets] Decrypt: ${FILE}"
+    run env HELM_SECRETS_VALUES_ALLOW_PATH_TRAVERSAL=true "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
     assert_output --partial "port: 81"
-    assert_output --partial "[helm-secrets] Removed: ${FILE}.dec"
-    assert_file_not_exist "${FILE}.dec"
+    assert_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ remote chart + secrets.yaml + http://" {
+    VALUES="https://raw.githubusercontent.com/jkroepke/helm-secrets/main/tests/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template --repo https://jkroepke.github.io/helm-charts/ --version 1.0.3 values -f "${VALUES_PATH}" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
+    assert_output --partial "global_secret: global_bar"
+    assert_output --partial "[helm-secrets] Removed: "
+    assert_success
+}
+
+@test "template: helm template w/ remote chart + secrets.yaml + http:// + --set-file" {
+    VALUES="https://raw.githubusercontent.com/jkroepke/helm-secrets/main/tests/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template --repo https://jkroepke.github.io/helm-charts/ --version 1.0.3 values --set-file "content=${VALUES_PATH}" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
+    assert_output --partial "global_secret: global_bar"
+    assert_output --partial "[helm-secrets] Removed: "
+    assert_success
+}
+
+@test "template: helm template w/ remote chart + secrets.yaml + http:// + query string url" {
+    if on_windows; then
+        skip
+    fi
+
+    VALUES="https://raw.githubusercontent.com/jkroepke/helm-secrets/main/tests/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml?foo=b4r&test=true&arg1="
+    VALUES_PATH="${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template --repo https://jkroepke.github.io/helm-charts/ --version 1.0.3 values -f "${VALUES_PATH}" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES//\?/\\?}"
+    assert_output --partial "global_secret: global_bar"
+    assert_output --partial "[helm-secrets] Removed: "
+    assert_success
+}
+
+@test "template: helm template w/ remote chart + secrets.yaml + http:// + query string url + --set-file" {
+    if on_windows; then
+        skip
+    fi
+
+    VALUES="https://raw.githubusercontent.com/jkroepke/helm-secrets/main/tests/assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml?foo=b4r&test=true&arg1="
+    VALUES_PATH="${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template --repo https://jkroepke.github.io/helm-charts/ --version 1.0.3 values --set-file "content=${VALUES_PATH}" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES//\?/\\?}"
+    assert_output --partial "global_secret: global_bar"
+    assert_output --partial "[helm-secrets] Removed: "
+    assert_success
+}
+
+@test "template: helm template w/ chart + --evaluate-templates" {
+    if on_wsl || ! is_backend "vals"; then
+        skip
+    fi
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets --evaluate-templates template "${TEST_TEMP_DIR}/chart" 2>&1
+
+    assert_output --partial 'config: "42"'
+    refute_output --partial 'secret: "42"'
+    assert_success
+}
+
+@test "template: helm template w/ chart + --evaluate-templates=true" {
+    if on_wsl || ! is_backend "vals"; then
+        skip
+    fi
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    # shellcheck disable=SC2030 disable=SC2031
+    run env SECRET_VALUE=44 WSLENV="SECRET_VALUE:${WSLENV:-}" \
+        "${HELM_BIN}" secrets --evaluate-templates=true template "${TEST_TEMP_DIR}/chart" 2>&1
+
+    assert_output --partial 'config: "42"'
+    assert_output --partial 'config.env: "44"'
+    refute_output --partial 'secret: "42"'
+    refute_output --partial 'secret.env: "44"'
+    assert_success
+}
+
+@test "template: helm template w/ chart + --evaluate-templates true" {
+    if on_wsl || ! is_backend "vals"; then
+        skip
+    fi
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    # shellcheck disable=SC2030 disable=SC2031
+    run env SECRET_VALUE=44 WSLENV="SECRET_VALUE:${WSLENV:-}" \
+        "${HELM_BIN}" secrets --evaluate-templates true template "${TEST_TEMP_DIR}/chart" 2>&1
+
+    assert_output --partial 'config: "42"'
+    assert_output --partial 'config.env: "44"'
+    refute_output --partial 'secret: "42"'
+    refute_output --partial 'secret.env: "44"'
+    assert_success
+}
+
+@test "template: helm template w/ chart + HELM_SECRETS_EVALUATE_TEMPLATES=true" {
+    if on_wsl || ! is_backend "vals"; then
+        skip
+    fi
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    # shellcheck disable=SC2030 disable=SC2031
+    run env SECRET_VALUE=44 HELM_SECRETS_EVALUATE_TEMPLATES=true WSLENV="HELM_SECRETS_EVALUATE_TEMPLATES:SECRET_VALUE:${WSLENV:-}" \
+        "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" 2>&1
+
+    assert_output --partial 'config: "42"'
+    assert_output --partial 'config.env: "44"'
+    refute_output --partial 'secret: "42"'
+    refute_output --partial 'secret.env: "44"'
+    assert_success
+}
+
+@test "template: helm template w/ chart + wrapper + HELM_SECRETS_EVALUATE_TEMPLATES=true" {
+    if on_wsl || ! is_backend "vals"; then
+        skip
+    fi
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    cp "${GIT_ROOT}/scripts/wrapper/helm.sh" "${TEST_TEMP_DIR}/helm"
+    chmod +x "${TEST_TEMP_DIR}/helm"
+
+    # shellcheck disable=SC2030 disable=SC2031
+    run env HELM_SECRETS_WRAPPER_ENABLED=true SECRET_VALUE=44 HELM_SECRETS_EVALUATE_TEMPLATES=true WSLENV="HELM_SECRETS_EVALUATE_TEMPLATES:SECRET_VALUE:${WSLENV:-}" \
+        "${TEST_TEMP_DIR}/helm" template "${TEST_TEMP_DIR}/chart" 2>&1
+
+    assert_output --partial 'config: "42"'
+    assert_output --partial 'config.env: "44"'
+    refute_output --partial 'secret: "42"'
+    refute_output --partial 'secret.env: "44"'
+    assert_success
+}
+
+@test "template: helm template w/ chart + --evaluate-templates true + invalid syntax" {
+    if on_wsl || ! is_backend "vals"; then
+        skip
+    fi
+
+    create_chart "${TEST_TEMP_DIR}" "false"
+
+    cp -r "${TEST_ROOT}/assets/values/${HELM_SECRETS_BACKEND}/templates/error/." "${TEST_TEMP_DIR}/chart/templates/"
+
+    # shellcheck disable=SC2030 disable=SC2031
+    run env SECRET_VALUE=44 WSLENV="SECRET_VALUE:${WSLENV:-}" \
+        "${HELM_BIN}" secrets --evaluate-templates true template "${TEST_TEMP_DIR}/chart" 2>&1
+
+    refute_output --partial 'config: "42"'
+    refute_output --partial 'config.env: "44"'
+    refute_output --partial 'secret: "42"'
+    refute_output --partial 'secret.env: "44"'
+    assert_output --partial 'vals error:'
+    assert_failure
+}
+
+@test "template: helm template w/ chart + --evaluate-templates false" {
+    if on_wsl || ! is_backend "vals"; then
+        skip
+    fi
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    # shellcheck disable=SC2030 disable=SC2031
+    run env SECRET_VALUE=44 WSLENV="SECRET_VALUE:${WSLENV:-}" \
+        "${HELM_BIN}" secrets --evaluate-templates false template "${TEST_TEMP_DIR}/chart" 2>&1
+
+    refute_output --partial 'config: "42"'
+    refute_output --partial 'config.env: "44"'
+    refute_output --partial 'secret: "42"'
+    refute_output --partial 'secret.env: "44"'
+    assert_success
+}
+
+@test "template: helm template w/ chart + --evaluate-templates + --evaluate-templates-decode-secrets" {
+    if on_wsl || ! is_backend "vals"; then
+        skip
+    fi
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    # shellcheck disable=SC2030 disable=SC2031
+    run env SECRET_VALUE=44 WSLENV="SECRET_VALUE:${WSLENV:-}" \
+        "${HELM_BIN}" secrets --evaluate-templates --evaluate-templates-decode-secrets template "${TEST_TEMP_DIR}/chart" 2>&1
+
+    assert_output --partial 'config: "42"'
+    assert_output --partial 'config.env: "44"'
+    assert_output --partial 'secret: NDI='
+    assert_output --partial 'secret.env: NDQ='
+    assert_success
+}
+
+@test "template: helm template w/ chart + --evaluate-templates + --evaluate-templates-decode-secrets=true" {
+    if on_wsl || ! is_backend "vals"; then
+        skip
+    fi
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    # shellcheck disable=SC2030 disable=SC2031
+    run env SECRET_VALUE=44 WSLENV="SECRET_VALUE:${WSLENV:-}" \
+        "${HELM_BIN}" secrets --evaluate-templates --evaluate-templates-decode-secrets=true template "${TEST_TEMP_DIR}/chart" 2>&1
+
+    assert_output --partial 'config: "42"'
+    assert_output --partial 'config.env: "44"'
+    assert_output --partial 'secret: NDI='
+    assert_output --partial 'secret.env: NDQ='
+    assert_success
+}
+
+@test "template: helm template w/ chart + --evaluate-templates + --evaluate-templates-decode-secrets true" {
+    if on_wsl || ! is_backend "vals"; then
+        skip
+    fi
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    # shellcheck disable=SC2030 disable=SC2031
+    run env SECRET_VALUE=44 WSLENV="SECRET_VALUE:${WSLENV:-}" \
+        "${HELM_BIN}" secrets --evaluate-templates --evaluate-templates-decode-secrets true template "${TEST_TEMP_DIR}/chart" 2>&1
+
+    assert_output --partial 'config: "42"'
+    assert_output --partial 'config.env: "44"'
+    assert_output --partial 'secret: NDI='
+    assert_output --partial 'secret.env: NDQ='
+    assert_success
+}
+
+@test "template: helm template w/ chart + --evaluate-templates + --evaluate-templates-decode-secrets false" {
+    if on_wsl || ! is_backend "vals"; then
+        skip
+    fi
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    # shellcheck disable=SC2030 disable=SC2031
+    run env SECRET_VALUE=44 WSLENV="SECRET_VALUE:${WSLENV:-}" \
+        "${HELM_BIN}" secrets --evaluate-templates --evaluate-templates-decode-secrets false template "${TEST_TEMP_DIR}/chart" 2>&1
+
+    assert_output --partial 'config: "42"'
+    assert_output --partial 'config.env: "44"'
+    refute_output --partial 'secret: "42"'
+    refute_output --partial 'secret.env: "44"'
+    assert_success
+}
+
+@test "template: helm template w/ chart + sops!secrets.yaml + wrapper --set vals!service.port" {
+    VALUES="assets/values/sops/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "sops!${VALUES_PATH}" \
+        --set "service.port=vals!ref+echo://87" 2>&1
+
+    assert_output --partial "port: 87"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + sops!secrets.yaml + wrapper --set vals!service.port + HELM_SECRETS_ALLOWED_BACKENDS=vals,sops" {
+    VALUES="assets/values/sops/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    # shellcheck disable=SC2030 disable=SC2031
+    run env HELM_SECRETS_ALLOWED_BACKENDS=vals,sops WSLENV="HELM_SECRETS_ALLOWED_BACKENDS:${WSLENV}" \
+        "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "sops!${VALUES_PATH}" \
+        --set "service.port=vals!ref+echo://87" 2>&1
+
+    assert_output --partial "port: 87"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + nonexists!secrets.yaml + wrapper --set nonexists!service.port" {
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "nonexists!${VALUES_PATH}" \
+        --set "service.port=nonexists!ref+echo://87" 2>&1
+
+    assert_output --partial "[helm-secrets] File does not exist: nonexists!${VALUES_PATH}"
+    assert_failure
+}
+
+@test "template: helm template w/ chart + nonexists!secrets.yaml + wrapper --set nonexists!service.port + HELM_SECRETS_ALLOWED_BACKENDS=noop" {
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    # shellcheck disable=SC2030 disable=SC2031
+    run env HELM_SECRETS_ALLOWED_BACKENDS=noop WSLENV="HELM_SECRETS_ALLOWED_BACKENDS:${WSLENV}" \
+        "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "nonexists!${VALUES_PATH}" \
+        --set "service.port=nonexists!ref+echo://87" 2>&1
+
+    assert_output --partial "secret backend '${HELM_SECRETS_BACKEND}' not allowed"
+    assert_failure
+}
+
+@test "template: helm template w/ chart + secrets://sops!secrets.yaml + --set-file secrets://sops!file.txt" {
+    VALUES="assets/values/sops/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+    SET_FILE_PATH="$(dirname "${VALUES_PATH}")/files/file.txt"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" -f "secrets://sops!${VALUES_PATH}" \
+        --set-file podAnnotations.fromFile="secrets://sops!${SET_FILE_PATH}" 2>&1
+
+    assert_output --partial "port: 81"
+    assert_output --partial "hello=fromextrafile"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets://vals!secrets.yaml + --set-file secrets://vals!file.txt" {
+    VALUES="assets/values/vals/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+    SET_FILE_PATH="$(dirname "${VALUES_PATH}")/files/file.txt"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" -f "secrets://vals!${VALUES_PATH}" \
+        --set-file podAnnotations.fromFile="secrets://vals!${SET_FILE_PATH}" 2>&1
+
+    assert_output --partial "port: 81"
+    assert_output --partial "hello=fromextrafile"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets://vals!secrets.yaml + --set-file secrets://vals!file.txt + HELM_SECRETS_ALLOWED_BACKENDS=noop" {
+    VALUES="assets/values/vals/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+    SET_FILE_PATH="$(dirname "${VALUES_PATH}")/files/file.txt"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    # shellcheck disable=SC2030 disable=SC2031
+    run env HELM_SECRETS_ALLOWED_BACKENDS=noop WSLENV="HELM_SECRETS_ALLOWED_BACKENDS:${WSLENV}" \
+        "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" -f "secrets://vals!${VALUES_PATH}" \
+        --set-file podAnnotations.fromFile="secrets://vals!${SET_FILE_PATH}" 2>&1
+
+    assert_output --partial "secret backend '${HELM_SECRETS_BACKEND}' not allowed"
+    assert_failure
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets://nonexists!secrets.yaml + --set-file secrets://nonexists!file.txt" {
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+    SET_FILE_PATH="$(dirname "${VALUES_PATH}")/files/file.txt"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" template "$(_winpath "${TEST_TEMP_DIR}/chart")" -f "secrets://nonexists!${VALUES_PATH}" \
+        --set-file podAnnotations.fromFile="secrets://nonexists!${SET_FILE_PATH}" 2>&1
+
+    assert_output --partial "Can't find secret backend: nonexists"
+    assert_failure
+}
+
+@test "template: helm template w/ chart + secrets.yaml + HELM_SECRETS_DECRYPT_SECRETS_IN_TMP_DIR=true" {
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    # shellcheck disable=SC2030 disable=SC2031
+    run env HELM_SECRETS_DECRYPT_SECRETS_IN_TMP_DIR=true WSLENV="HELM_SECRETS_DECRYPT_SECRETS_IN_TMP_DIR:${WSLENV}" \
+        "${HELM_BIN}" secrets template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
+    assert_output --partial "port: 81"
+    refute_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_output -e "\[helm-secrets\] Removed: .*/secrets.yaml.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + secrets.yaml + --decrypt-secrets-in-tmp-dir" {
+    VALUES="assets/values/${HELM_SECRETS_BACKEND}/secrets.yaml"
+    VALUES_PATH="${TEST_TEMP_DIR}/${VALUES}"
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets --decrypt-secrets-in-tmp-dir template "${TEST_TEMP_DIR}/chart" -f "${VALUES_PATH}" 2>&1
+
+    assert_output -e "\[helm-secrets\] Decrypt: .*${VALUES}"
+    assert_output --partial "port: 81"
+    refute_output -e "\[helm-secrets\] Removed: .*${VALUES}.dec"
+    assert_output -e "\[helm-secrets\] Removed: .*/secrets.yaml.dec"
+    assert_success
+    assert_file_not_exists "${VALUES_PATH}.dec"
+}
+
+@test "template: helm template w/ chart + --set imagePullSecrets={fr,en,de,zh,ko}" {
+    if on_windows || on_wsl; then
+        skip
+    fi
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template --set "imagePullSecrets={fr,en,de,zh,ko}" "${TEST_TEMP_DIR}/chart" 2>&1
+
+    assert_output --partial "- fr"
+    assert_output --partial "- en"
+    assert_output --partial "- de"
+    assert_output --partial "- zh"
+    assert_output --partial "- ko"
+    assert_success
+}
+
+@test "template: helm template w/ chart + --set imagePullSecrets={fr,en,de,zh,ko} with quoted values" {
+    if on_windows || on_wsl; then
+        skip
+    fi
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template --set 'imagePullSecrets={"fr","en","de","zh","ko"}' "${TEST_TEMP_DIR}/chart" 2>&1
+
+    assert_output --partial "- '\"fr\"'"
+    assert_output --partial "- '\"en\"'"
+    assert_output --partial "- '\"de\"'"
+    assert_output --partial "- '\"zh\"'"
+    assert_output --partial "- '\"ko\"'"
+    assert_success
+}
+
+@test "template: helm template w/ chart + --set imagePullSecrets={fr,en,de,zh,ko} with escaped comma" {
+    if on_windows || on_wsl; then
+        skip
+    fi
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template --set 'imagePullSecrets={"fr","e\,n","de","zh","ko"}' "${TEST_TEMP_DIR}/chart" 2>&1
+
+    assert_output --partial "- '\"fr\"'"
+    assert_output --partial "- '\"e,n\"'"
+    assert_output --partial "- '\"de\"'"
+    assert_output --partial "- '\"zh\"'"
+    assert_output --partial "- '\"ko\"'"
+    assert_success
+}
+
+@test "template: helm template w/ chart + --set imagePullSecrets={fr,en,de,zh,ko} with escaped bracket" {
+    if on_windows || on_wsl; then
+        skip
+    fi
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template --set 'imagePullSecrets={fr,de,\}3\,2,ko,zh}' "${TEST_TEMP_DIR}/chart" 2>&1
+
+    assert_output --partial "- fr"
+    assert_output --partial "- de"
+    assert_output --partial "- '}3,2'"
+    assert_output --partial "- zh"
+    assert_output --partial "- ko"
+    assert_success
+}
+
+@test "template: helm template w/ chart + --set imagePullSecrets={fr,en,de,zh,ko} with multiple escaped values" {
+    if on_windows || on_wsl; then
+        skip
+    fi
+
+    create_chart "${TEST_TEMP_DIR}"
+
+    run "${HELM_BIN}" secrets template --set 'imagePullSecrets={fr,d\,e,en,ko,zh},service.port=87,podAnnotations.second=Hello{Wo\,a' "${TEST_TEMP_DIR}/chart" 2>&1
+
+    assert_output --partial "- fr"
+    assert_output --partial "- d,e"
+    assert_output --partial "- en"
+    assert_output --partial "- zh"
+    assert_output --partial "- ko"
+
+    assert_output --partial "port: 87"
+    assert_output --partial "second: Hello{Wo,a"
+    assert_success
 }

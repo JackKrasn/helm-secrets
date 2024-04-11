@@ -34,7 +34,7 @@ Then follow the installation instruction for bats here: https://github.com/bats-
 More information's here: https://github.com/bats-core/bats-core
 
 ### sops
-Can be downloaded here: https://github.com/mozilla/sops/releases
+Can be downloaded here: https://github.com/getsops/sops/releases
 
 Alternately available via [homebrew](https://brew.sh/):
 
@@ -42,10 +42,10 @@ Alternately available via [homebrew](https://brew.sh/):
 brew install sops
 ```
 
-More information's here: https://github.com/mozilla/sops
+More information's here: https://github.com/getsops/sops
 
 ### gpg
-sops only non public cloud encryption method based on gpg.
+sops only non-public cloud encryption method based on gpg.
 
 Alternately available via [homebrew](https://brew.sh/):
 ```bash
@@ -55,13 +55,34 @@ brew info gnupg
 On Linux use your package manager to install gpg if it's not already installed.
 
 ### vault-cli (optional)
-The vault cli is only required to run the tests with the `HELM_SECRETS_DRIVER=vault` environment variable.
+The vault cli is only required to run the tests with the `HELM_SECRETS_BACKEND=vault` environment variable.
 
 You could download vault here: https://www.vaultproject.io/downloads
 
 Alternately available via [homebrew](https://brew.sh/):
 ```bash
 brew info vault
+```
+
+### onepassword (optional)
+
+The 1Password CLI is only required to run the tests with the `HELM_SECRETS_BACKEND=custom-onepassword` environment variable.
+
+Instructions on how to install and set up the 1Password CLI can be found here: https://developer.1password.com/docs/cli/get-started
+
+Create the following test item before running the tests:
+
+```shell
+op item create --category=login \
+    --title='helm-secrets test' \
+    --vault='Private' \
+    'username=test-username' \
+    'password=mytestpassword123' \
+    'email[email]=test@example.com' \
+    'data.username[text]=a-test-name' \
+    'data.password[password]=testthispassword' \
+    'data 2.email[email]=my-test@example.com' \
+    'data 2.password[password]=my-test-could-be-different!'
 ```
 
 ## Run
@@ -90,15 +111,15 @@ This method is described as "Run bats from source" inside the bats-core document
 
 More information about running single tests or filtering tests can be found here: https://github.com/bats-core/bats-core#usage
 
-By default, the sops driver is selected for tests. If you want to test an other secrets driver like
-[vault](../scripts/drivers/vault.sh) you could do it by env variable `HELM_SECRETS_DRIVER=vault`.
+By default, the sops backend is selected for tests. 
+If you want to test another secret backend like [vals](../scripts/lib/backends/vals.sh), you could do it by env variable `HELM_SECRETS_BACKEND=vals`.
 
 ```bash
 # Unit Tests
-HELM_SECRETS_DRIVER=vault bats -r tests/unit
+HELM_SECRETS_BACKEND=vault bats -r tests/unit
 
 # IT Tests
-HELM_SECRETS_DRIVER=vault bats -r tests/it
+HELM_SECRETS_BACKEND=vault bats -r tests/it
 ```
 
 The vault tests require a reachable vault server. Start one on you local machine by run:

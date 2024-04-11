@@ -1,14 +1,16 @@
-@setlocal enableextensions enabledelayedexpansion
 @echo off
 IF DEFINED HELM_DEBUG (
-    IF HELM_DEBUG EQU 1 (
+    IF "%HELM_DEBUG%"=="1" (
+        @echo on
+    )
+    IF "%HELM_DEBUG%"=="true" (
         @echo on
     )
 )
 
 IF NOT DEFINED SOPS_GPG_EXEC (
     where /q gpg.exe
-    IF %ERRORLEVEL% EQU 0 (
+    IF ERRORLEVEL 0 IF NOT ERRORLEVEL 1 (
         FOR /F "tokens=* USEBACKQ" %%F IN (`where gpg.exe`) DO (
             SET SOPS_GPG_EXEC=%%F
         )
@@ -19,35 +21,50 @@ IF NOT DEFINED SOPS_GPG_EXEC (
 if not "%HELM_SECRETS_WINDOWS_SHELL%"=="" GOTO :ENVSH
 
 
-:: check for wsl
-wsl bash -c exit  >nul 2>&1
-IF %ERRORLEVEL% EQU 0 GOTO :WSL
-
-
-:: check for cygwin installation or git for windows is inside %PATH%
-"sh" -c exit  >nul 2>&1
-IF %ERRORLEVEL% EQU 0 GOTO :SH
-
-
-:: check for cygwin installation or git for windows is inside %PATH%
-"bash" -c exit  >nul 2>&1
-IF %ERRORLEVEL% EQU 0 GOTO :BASH
-
-
 :: check for git-bash
 "%programfiles%\Git\bin\bash.exe" -c exit  >nul 2>&1
-IF %ERRORLEVEL% EQU 0 GOTO :GITBASH
+IF ERRORLEVEL 0 IF NOT ERRORLEVEL 1 GOTO :GITBASH
+
+
+:: check for bash via scoop
+"%userprofile%\scoop\shims\bash.exe" -c exit  >nul 2>&1
+IF ERRORLEVEL 0 IF NOT ERRORLEVEL 1 GOTO :SCOOP_BASH
+
+
+:: check for sh via scoop
+"%userprofile%\scoop\shims\sh.exe" -c exit  >nul 2>&1
+IF ERRORLEVEL 0 IF NOT ERRORLEVEL 1 GOTO :SCOOP_SH
+
+
+:: check for git-bash via scoop
+"%userprofile%\scoop\shims\git-bash.exe" -c exit  >nul 2>&1
+IF ERRORLEVEL 0 IF NOT ERRORLEVEL 1 GOTO :SCOOP_GITBASH
 
 
 :: check for git-bash (32-bit)
 "%programfiles(x86)%\Git\bin\bash.exe" -c exit  >nul 2>&1
-IF %ERRORLEVEL% EQU 0 GOTO :GITBASH32
+IF ERRORLEVEL 0 IF NOT ERRORLEVEL 1 GOTO :GITBASH32
 
 
 :: check git for windows
 where.exe git.exe  >nul 2>&1
-IF %ERRORLEVEL% EQU 0 GOTO :GITBASH_CUSTOM
+IF ERRORLEVEL 0 IF NOT ERRORLEVEL 1 GOTO :GITBASH_CUSTOM
 :RETURN_GITBASH
+
+
+:: check for wsl
+wsl bash -c exit  >nul 2>&1
+IF ERRORLEVEL 0 IF NOT ERRORLEVEL 1 GOTO :WSL
+
+
+:: check for cygwin installation or git for windows is inside %PATH%
+"sh" -c exit  >nul 2>&1
+IF ERRORLEVEL 0 IF NOT ERRORLEVEL 1 GOTO :SH
+
+
+:: check for cygwin installation or git for windows is inside %PATH%
+"bash" -c exit  >nul 2>&1
+IF ERRORLEVEL 0 IF NOT ERRORLEVEL 1 GOTO :BASH
 
 GOTO :NOSHELL
 
@@ -81,6 +98,24 @@ exit /b %errorlevel%
 exit /b %errorlevel%
 
 
+
+:SCOOP_BASH
+"%userprofile%\scoop\shims\bash.exe" %*
+exit /b %errorlevel%
+
+
+
+:SCOOP_SH
+"%userprofile%\scoop\shims\sh.exe" %*
+exit /b %errorlevel%
+
+
+
+:SCOOP_GITBASH
+"%userprofile%\scoop\shims\git-bash.exe" %*
+exit /b %errorlevel%
+
+
 :GITBASH_CUSTOM
 :: CMD output to variable - https://stackoverflow.com/a/6362922/8087167
 FOR /F "tokens=* USEBACKQ" %%F IN (`where.exe git.exe`) DO (
@@ -97,64 +132,44 @@ FOR %%F in ("%GIT_FILEPATH%") DO SET GIT_DIRPATH=%%~dpF
 IF ERRORLEVEL 1 GOTO :RETURN_GITBASH
 
 "%GIT_DIRPATH%..\bin\bash.exe" %*
-exit /b %errorlevel%
+exit /b %ERRORLEVEL%
 
 
 :WSL
-:: Use WSL, but convert all paths (script + arguments) to wsl paths
-SET ARGS=
-
-:: Loop through all parameters - https://stackoverflow.com/a/34019557/8087167
-:WSLPATHLOOP
-if "%1"=="" goto WSLPATHENDLOOP
-
-:: IF string contains string - https://stackoverflow.com/a/7006016/8087167
-SET STR1="%1"
-if not "x%STR1:\=%"=="x%STR1%" (
-    :: CMD output to variable - https://stackoverflow.com/a/6362922/8087167
-    FOR /F "tokens=* USEBACKQ" %%F IN (`wsl wslpath "%STR1:\=/%"`) DO (
-        SET WSLPATH="%%F"
-    )
-) else (
-    SET WSLPATH=%STR1%
-)
-SET ARGS=%ARGS% %WSLPATH%
-
-shift
-goto WSLPATHLOOP
-:WSLPATHENDLOOP
 
 :: WSL needs .exe suffix for windows binary. Define path only if exists in windows PATH
-IF NOT DEFINED HELM_SECRETS_HELM_PATH (
-    where /q helm.exe
-    IF %ERRORLEVEL% EQU 0 (
-        SET HELM_SECRETS_HELM_PATH=helm.exe
+IF NOT DEFINED HELM_BIN (
+    IF NOT DEFINED HELM_SECRETS_HELM_PATH (
+        where /q helm.exe
+        IF ERRORLEVEL 0 IF NOT ERRORLEVEL 1 (
+            SET HELM_SECRETS_HELM_PATH=helm.exe
+        )
     )
 )
 
 IF NOT DEFINED HELM_SECRETS_SOPS_PATH (
     where /q sops.exe
-    IF %ERRORLEVEL% EQU 0 (
+    IF ERRORLEVEL 0 IF NOT ERRORLEVEL 1 (
         SET HELM_SECRETS_SOPS_PATH=sops.exe
     )
 )
 
 IF NOT DEFINED HELM_SECRETS_VALS_PATH (
     where /q vals.exe
-    IF %ERRORLEVEL% EQU 0 (
+    IF ERRORLEVEL 0 IF NOT ERRORLEVEL 1 (
         SET HELM_SECRETS_VALS_PATH=vals.exe
     )
 )
 
 IF NOT DEFINED HELM_SECRETS_CURL_PATH (
     where /q curl.exe
-    IF %ERRORLEVEL% EQU 0 (
+    IF ERRORLEVEL 0 IF NOT ERRORLEVEL 1 (
         SET HELM_SECRETS_CURL_PATH=curl.exe
     )
 )
 
 :: https://devblogs.microsoft.com/commandline/share-environment-vars-between-wsl-and-windows/
-SET WSLENV=SOPS_AGE_KEY:SOPS_AGE_KEY_FILE:TEMP:%WSLENV%
+SET WSLENV=SOPS_AGE_KEY:SOPS_AGE_KEY_FILE:%WSLENV%
 IF DEFINED HELM_SECRETS_DEC_SUFFIX (
     SET WSLENV=HELM_SECRETS_DEC_SUFFIX:%WSLENV%
 )
@@ -164,17 +179,17 @@ IF DEFINED HELM_SECRETS_DEC_PREFIX (
 IF DEFINED HELM_SECRETS_QUIET (
     SET WSLENV=HELM_SECRETS_QUIET:%WSLENV%
 )
-IF DEFINED HELM_SECRETS_DRIVER (
-    SET WSLENV=HELM_SECRETS_DRIVER:%WSLENV%
+IF DEFINED HELM_SECRETS_BACKEND (
+    SET WSLENV=HELM_SECRETS_BACKEND:%WSLENV%
 )
-IF DEFINED HELM_SECRETS_DRIVER_ARGS (
-    SET WSLENV=HELM_SECRETS_DRIVER_ARGS:%WSLENV%
+IF DEFINED HELM_SECRETS_BACKEND_ARGS (
+    SET WSLENV=HELM_SECRETS_BACKEND_ARGS:%WSLENV%
+)
+IF DEFINED HELM_SECRETS_ALLOWED_BACKENDS (
+    SET WSLENV=HELM_SECRETS_ALLOWED_BACKENDS:%WSLENV%
 )
 IF DEFINED HELM_SECRETS_DEC_DIR (
     SET WSLENV=HELM_SECRETS_DEC_DIR:%WSLENV%
-)
-IF DEFINED HELM_SECRETS_OUTPUT_DECRYPTED_FILE_PATH (
-    SET WSLENV=HELM_SECRETS_OUTPUT_DECRYPTED_FILE_PATH:%WSLENV%
 )
 IF DEFINED HELM_SECRETS_URL_VARIABLE_EXPANSION (
     SET WSLENV=HELM_SECRETS_URL_VARIABLE_EXPANSION:%WSLENV%
@@ -182,42 +197,80 @@ IF DEFINED HELM_SECRETS_URL_VARIABLE_EXPANSION (
 IF DEFINED HELM_DEBUG (
     SET WSLENV=HELM_DEBUG:%WSLENV%
 )
+IF DEFINED HELM_SECRETS_IGNORE_MISSING_VALUES (
+    SET WSLENV=HELM_SECRETS_IGNORE_MISSING_VALUES:%WSLENV%
+)
+IF DEFINED HELM_SECRETS_EVALUATE_TEMPLATES (
+    SET WSLENV=HELM_SECRETS_EVALUATE_TEMPLATES:%WSLENV%
+)
+IF DEFINED HELM_SECRETS_EVALUATE_TEMPLATES_DECODE_SECRETS (
+    SET WSLENV=HELM_SECRETS_EVALUATE_TEMPLATES_DECODE_SECRETS:%WSLENV%
+)
 
-if not "x%HELM_PLUGIN_DIR:\=%"=="x%HELM_PLUGIN_DIR%" (
-    SET WSLENV=HELM_PLUGIN_DIR/p:%WSLENV%
+IF NOT DEFINED HELM_BIN GOTO END_HELM_BIN
+IF "x%HELM_BIN:\=%"=="x%HELM_BIN%" (
+    SET WSLENV=HELM_BIN:%WSLENV%
 ) else (
+    SET WSLENV=HELM_BIN/p:%WSLENV%
+)
+:END_HELM_BIN
+
+IF NOT DEFINED HELM_PLUGIN_DIR GOTO END_HELM_PLUGIN_DIR
+IF "x%HELM_PLUGIN_DIR:\=%"=="x%HELM_PLUGIN_DIR%" (
     SET WSLENV=HELM_PLUGIN_DIR:%WSLENV%
-)
-
-if not "x%HELM_SECRETS_HELM_PATH:\=%"=="x%HELM_SECRETS_HELM_PATH%" (
-    SET WSLENV=HELM_SECRETS_HELM_PATH/p:%WSLENV%
 ) else (
+    SET WSLENV=HELM_PLUGIN_DIR/p:%WSLENV%
+)
+:END_HELM_PLUGIN_DIR
+
+IF NOT DEFINED HELM_SECRETS_HELM_PATH GOTO END_HELM_SECRETS_HELM_PATH
+IF "x%HELM_SECRETS_HELM_PATH:\=%"=="x%HELM_SECRETS_HELM_PATH%" (
     SET WSLENV=HELM_SECRETS_HELM_PATH:%WSLENV%
-)
-
-if not "x%HELM_SECRETS_SOPS_PATH:\=%"=="x%HELM_SECRETS_SOPS_PATH%" (
-    SET WSLENV=HELM_SECRETS_SOPS_PATH/p:%WSLENV%
 ) else (
+    SET WSLENV=HELM_SECRETS_HELM_PATH/p:%WSLENV%
+)
+:END_HELM_SECRETS_HELM_PATH
+
+IF NOT DEFINED HELM_SECRETS_SOPS_PATH GOTO END_HELM_SECRETS_SOPS_PATH
+IF "x%HELM_SECRETS_SOPS_PATH:\=%"=="x%HELM_SECRETS_SOPS_PATH%" (
     SET WSLENV=HELM_SECRETS_SOPS_PATH:%WSLENV%
-)
-
-if not "x%HELM_SECRETS_VALS_PATH:\=%"=="x%HELM_SECRETS_VALS_PATH%" (
-    SET WSLENV=HELM_SECRETS_VALS_PATH/p:%WSLENV%
 ) else (
+    SET WSLENV=HELM_SECRETS_SOPS_PATH/p:%WSLENV%
+)
+:END_HELM_SECRETS_SOPS_PATH
+
+IF NOT DEFINED HELM_SECRETS_VALS_PATH GOTO END_HELM_SECRETS_VALS_PATH
+IF "x%HELM_SECRETS_VALS_PATH:\=%"=="x%HELM_SECRETS_VALS_PATH%" (
     SET WSLENV=HELM_SECRETS_VALS_PATH:%WSLENV%
-)
-
-if not "x%HELM_SECRETS_CURL_PATH:\=%"=="x%HELM_SECRETS_CURL_PATH%" (
-    SET WSLENV=HELM_SECRETS_CURL_PATH/p:%WSLENV%
 ) else (
+    SET WSLENV=HELM_SECRETS_VALS_PATH/p:%WSLENV%
+)
+:END_HELM_SECRETS_VALS_PATH
+
+IF NOT DEFINED HELM_SECRETS_CURL_PATH GOTO END_HELM_SECRETS_CURL_PATH
+IF "x%HELM_SECRETS_CURL_PATH:\=%"=="x%HELM_SECRETS_CURL_PATH%" (
     SET WSLENV=HELM_SECRETS_CURL_PATH:%WSLENV%
+) else (
+    SET WSLENV=HELM_SECRETS_CURL_PATH/p:%WSLENV%
+)
+:END_HELM_SECRETS_CURL_PATH
+
+SET HELM_SECRET_WSL_INTEROP=1
+SET WSLENV=HELM_SECRET_WSL_INTEROP:%WSLENV%
+
+SET SCRIPT="%1"
+if not [x%SCRIPT:\=%]==[x%SCRIPT%] (
+    :: CMD output to variable - https://stackoverflow.com/a/6362922/8087167
+    FOR /F "tokens=* USEBACKQ" %%F IN (`wsl wslpath %SCRIPT:\=/%`) DO (
+        SET SCRIPT="%%F"
+    )
 )
 
-wsl bash %ARGS%
-exit /b %errorlevel%
+wsl bash %SCRIPT% %*
+exit /b %ERRORLEVEL%
 
 
 :NOSHELL
 :: If no *nix shell found, raise an error.
 echo helm-secrets needs a unix shell. Please install WSL, cygwin or Git for Windows.
-exit /b %errorlevel% 1
+exit /b 1

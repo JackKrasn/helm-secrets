@@ -1,5 +1,5 @@
 name: "secrets"
-version: "3.15.0"
+version: "4.6.1-avault"
 usage: "Secrets encryption in Helm for Git storing"
 description: |-
   This plugin provides secrets values encryption for Helm charts secure storing
@@ -8,14 +8,14 @@ command: "$HELM_PLUGIN_DIR/scripts/run.sh"
 platformCommand:
   - os: windows
     command: "cmd /c $HELM_PLUGIN_DIR\\scripts\\wrapper\\sh.cmd $HELM_PLUGIN_DIR\\scripts\\run.sh"
+    #command: "powershell -noprofile -executionpolicy bypass -file $HELM_PLUGIN_DIR\\scripts\\wrapper\\sh.ps1 $HELM_PLUGIN_DIR\\scripts\\run.sh"
 
 downloaders:
   - command: "scripts/run.sh downloader"
     protocols:
-      - "sops"
-      - "secret"
       - "secrets"
       - "secrets+gpg-import"
       - "secrets+gpg-import-kubernetes"
       - "secrets+age-import"
       - "secrets+age-import-kubernetes"
+      - "secrets+literal"
